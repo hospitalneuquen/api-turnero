@@ -1,0 +1,291 @@
+import * as express from 'express';
+// import { Turnero } from '../models/turnero';
+import { Turno } from '../schemas/turno';
+import { Mongoose, Types } from "mongoose";
+
+// import * as utils from '../../../utils/utils';
+// import { defaultLimit, maxLimit } from './../../../config';
+const LETRAS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+let step = 100;
+
+let router = express.Router();
+
+router.get('/turnos/:id*/ventanilla/:ventanilla*', function (req, res, next) {
+    if (req.params.id) {
+        // en aggreggation framework mongoose no hace el parseo instantaneo 
+        // del string al object id, asique lo hacemos a mano
+        const id = Types.ObjectId(req.params.id);
+        const ventanilla = Types.ObjectId(req.params.ventanilla);
+
+
+        Turno.aggregate([
+
+            { '$project': { color: 1, tipo: 1, numeros: 1 } },
+            { '$match': { _id: id } },
+            { '$unwind': '$numeros' },
+            { '$match': { 'numeros.ultimoEstado': 'llamado', 'numeros.ventanilla': ventanilla } },
+            { '$unwind': '$numeros.estado' },
+            { '$match': { 'numeros.estado.valor': 'llamado' } },
+            { '$sort': { 'numeros.estado.fecha': -1 } },
+            { '$limit': 1 }
+
+        ], function (err, data) {
+            if (err) {
+                return next(err);
+            }
+            res.json(data);
+        });
+
+    } else {
+
+    }
+});
+
+router.get('/turnos/:id*/next', function (req, res, next) {
+    if (req.params.id) {
+        // en aggreggation framework mongoose no hace el parseo instantaneo 
+        // del string al object id, asique lo hacemos a mano
+        const id = Types.ObjectId(req.params.id);
+
+        Turno.aggregate([
+            { $project: { "color": 1, "tipo": 1, "numeros": 1 } },
+            { "$match": { "_id": id } },
+            { "$unwind": "$numeros" },
+            { "$match": { "numeros.ultimoEstado": 'libre' } },
+            { $limit: 1 }],
+
+            function (err, data) {
+                if (err) {
+                    return next(err);
+                }
+                res.json(data);
+            });
+
+    } else {
+
+    }
+});
+// db.getCollection('turnos').aggregate([{"$match": {"_id": ObjectId("58ee710153b5d847c868ce83")}}, { "$unwind": "$numeros" },{"$match": {"numeros.ultimoEstado": 'libre'}}, { $limit : 1 }])
+
+router.get('/turnos/:id*/count', function (req, res, next) {
+    if (req.params.id) {
+        // en aggreggation framework mongoose no hace el parseo instantaneo 
+        // del string al object id, asique lo hacemos a mano
+        const id = Types.ObjectId(req.params.id);
+
+        Turno.aggregate([
+            { $project: { "color": 1, "tipo": 1, "numeros": 1 } },
+            { "$match": { "_id": id } },
+            { "$unwind": "$numeros" },
+            { "$match": { "numeros.ultimoEstado": 'libre' } },
+            ],
+
+            function (err, data) {
+                if (err) {
+                    return next(err);
+                }
+                res.json({
+                    count: data.length
+                });
+            });
+
+    } else {
+
+    }
+});
+
+
+router.get('/turnos/:id*?', function (req, res, next) {
+    if (req.params.id) {
+        Turno.findById(req.params.id, function (err, data) {
+            if (err) {
+                return next(err);
+            }
+            res.json(data);
+        });
+    } else {
+        let query;
+        query = Turno.find();
+
+        if (req.query.tipo) {
+            query.where('tipo').equals(req.query.tipo);
+        }
+        console.log(req.body);
+        console.log(req.params);
+        query.exec(function (err, data) {
+            if (err) {
+                return next(err);
+            }
+            res.json(data);
+        });
+    }
+});
+
+router.get('/turnos', function (req, res, next) {
+    Turno.find(function (err, data) {
+        if (err) {
+            return next(err);
+        }
+        res.json(data);
+    });
+});
+
+router.post('/turnos', function (req, res, next) {
+    let letras = [];
+    // to lower
+    if (req.body.letraInicio) {
+        req.body.letraInicio = req.body.letraInicio.toLowerCase();
+    }
+
+    if (req.body.letraFin) {
+        req.body.letraFin = req.body.letraFin.toLowerCase();
+    }
+
+    // filtramos las letras que vamos  utilizar
+    if (req.body.letraInicio && req.body.letraFin) {
+        let letras = LETRAS.filter((letra) => {
+            return (letra.charCodeAt(0) <= req.body.letraFin.charCodeAt(0)) ? letra : null;
+        });
+    }
+
+    let turnos = new Turno(req.body);
+    turnos['numeros'] = [];
+
+    console.log("LETRAS: ****************", letras);
+    if (letras.length) {
+        // recorremos las letras
+        letras.forEach(function (val, index) {
+            let i = 0;
+            // recorremos los numeros
+            for (i; i < step; i++) {
+                var _turno = {
+                    letra: val,
+                    numero: i,
+                    llamado: 0,
+                    ultimoEstado: 'libre',
+                    ventanilla: null,
+                    estado: [{
+                        fecha: new Date(),
+                        valor: 'libre'
+                    }]
+                };
+
+                console.log(_turno);
+
+                turnos['numeros'].push(_turno);
+            }
+
+        });
+    } else {
+        let i = req.body.numeroInicio;
+        // recorremos los numeros
+        for (i; i < req.body.numeroFin; i++) {
+            var _turno = {
+                letra: null,
+                numero: i,
+                llamado: 0,
+                ultimoEstado: 'libre',
+                ventanilla: null,
+                estado: [{
+                    fecha: new Date(),
+                    valor: 'libre'
+                }]
+            };
+
+            console.log(_turno);
+
+            turnos['numeros'].push(_turno);
+        }
+    }
+    
+
+    turnos.save((err) => {
+        if (err) {
+            return next(err);
+        }
+
+        // console.log(typeof turnero);
+        // console.log();
+
+        res.json(turnos);
+    });
+});
+
+router.put('/turnos/:id', function (req, res, next) {
+    console.log('TODO: Reemplazar/validar uso de findByIdAndUpdate');
+    Turno.findByIdAndUpdate(req.params.id, req.body, { new: true }, function (err, data) {
+        if (err) {
+            return next(err);
+        }
+
+        res.json(data);
+    });
+});
+
+router.patch('/turnos/:id', function (req, res, next) {
+    let conditions = {};
+    let modificacion = {};
+    let options = {};
+
+    conditions['_id'] = req.params.id;
+
+    if (req.body.accion) {
+
+        if (req.body.accion === 'cambio_estado_numero') {
+            conditions['numeros._id'] = req.body.idNumero;
+
+            modificacion = {
+                $push: { "numeros.$.estado": req.body.valores.estado }
+            };
+
+            options = { upsert: true };
+        } else if (req.body.accion === 'cambio_ultimo_estado') {
+            conditions['numeros._id'] = req.body.idNumero;
+
+            modificacion = {
+                $set: {
+                    "numeros.$.ventanilla": req.body.valores.ventanilla,
+                    "numeros.$.llamado": req.body.valores.llamado,
+                    "numeros.$.ultimoEstado": req.body.valores.ultimoEstado
+                }
+            };
+
+            options = { upsert: true };
+        } else if (req.body.accion === 'rellamar') {
+            conditions['numeros._id'] = req.body.idNumero;
+
+            modificacion = {
+                $inc: {
+                    "numeros.$.llamado": req.body.valores.inc
+                }
+            };
+
+            options = { upsert: true };
+        }
+
+
+    }
+
+    // Turno.findByIdAndUpdate(req.params.id, modificacion , { upsert: true }, function (err, data) {
+    Turno.findOneAndUpdate(conditions, modificacion, options, function (err, data) {
+
+        if (err) {
+            return next(err);
+        }
+
+        res.json(data);
+
+    });
+});
+
+// router.delete('/turnero/:id', function (req, res, next) {
+//     Turnero.findByIdAndRemove(req.params._id, function (err, data) {
+//         if (err) {
+//             return next(err);
+//         }
+
+//         res.json(data);
+//     });
+// });
+
+export = router;

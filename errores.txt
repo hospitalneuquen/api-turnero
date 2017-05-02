@@ -1,0 +1,10 @@
+problemas:
+
+hacer un $push y un $set sobre una variable con mongo da error
+
+modificacion = {
+    $push:  { "numeros.$.estado": req.body.valores.estado },
+    $set : { "numeros.$" : {llamado: 1, ultimoEstado: 'llamado'} }
+};
+
+porque estoy tratando de modificar la "misma" variable al mismo tiempo 
