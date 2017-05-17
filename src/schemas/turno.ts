@@ -10,14 +10,17 @@ export let turnoSchema = new mongoose.Schema({
 
     letraInicio: String,
     letraFin: String,
-    numeroInicio: {type: Number, default: 0},
+    numeroInicio: {
+        type: Number,
+        default: 0
+    },
     numeroFin: Number,
 
     numeros: [{
         letra: String,
         numero: Number,
         llamado: Number,
-        ventanilla:  {
+        ventanilla: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'ventanilla'
         },

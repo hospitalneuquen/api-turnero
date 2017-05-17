@@ -78,7 +78,7 @@ router.get('/turnos/:id*/count', function (req, res, next) {
             { "$match": { "_id": id } },
             { "$unwind": "$numeros" },
             { "$match": { "numeros.ultimoEstado": 'libre' } },
-            ],
+        ],
 
             function (err, data) {
                 if (err) {
@@ -197,7 +197,7 @@ router.post('/turnos', function (req, res, next) {
             turnos['numeros'].push(_turno);
         }
     }
-    
+
 
     turnos.save((err) => {
         if (err) {
@@ -213,6 +213,22 @@ router.post('/turnos', function (req, res, next) {
 
 router.put('/turnos/:id', function (req, res, next) {
     console.log('TODO: Reemplazar/validar uso de findByIdAndUpdate');
+
+    // Turno.findById(req.params.id, function (err, data) {
+
+    //     let turno = new Turno(data);
+
+    //     turno.isNew = false;
+
+    //     turno.save((err) => {
+    //         if (err) {
+    //             return next(err);
+    //         }
+    //         res.json(turno);
+    //     });
+
+    // });
+
     Turno.findByIdAndUpdate(req.params.id, req.body, { new: true }, function (err, data) {
         if (err) {
             return next(err);

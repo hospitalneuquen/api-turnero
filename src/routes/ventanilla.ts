@@ -3,6 +3,7 @@ import * as express from 'express';
 import { Ventanilla } from '../schemas/ventanilla';
 // import * as utils from '../../../utils/utils';
 // import { defaultLimit, maxLimit } from './../../../config';
+import * as mongoose from 'mongoose';
 
 let router = express.Router();
 
@@ -53,13 +54,25 @@ router.post('/ventanillas', function (req, res, next) {
 });
 
 router.put('/ventanillas/:id', function (req, res, next) {
-    Ventanilla.findByIdAndUpdate(req.params.id, req.body, {new: true}, function (err, data) {
+    Ventanilla.findByIdAndUpdate(req.params.id, req.body, { new: true }, function (err, data) {
         if (err) {
             return next(err);
         }
 
         res.json(data);
     });
+});
+
+
+router.patch('/ventanillas/:id*?', function (req, res, next) {
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return next('ObjectID Inválido');
+    }
+
+
+
+
 });
 
 // router.delete('/turnero/:id', function (req, res, next) {
