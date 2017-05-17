@@ -70,6 +70,30 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
         return next('ObjectID Inválido');
     }
 
+    let conditions = {};
+    let modificacion = {};
+    let options = {};
+
+    conditions['_id'] = req.params.id;
+    options = { upsert: true };
+
+
+    modificacion = {
+        $set: {
+            "disponible": req.body.disponible
+        }
+    };
+
+    // Turno.findByIdAndUpdate(req.params.id, modificacion , { upsert: true }, function (err, data) {
+    Ventanilla.findOneAndUpdate(conditions, modificacion, options, function (err, data) {
+
+        if (err) {
+            return next(err);
+        }
+
+        res.json(data);
+
+    });
 
 
 

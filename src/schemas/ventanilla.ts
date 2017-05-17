@@ -1,11 +1,18 @@
 import * as mongoose from 'mongoose';
 
 export let ventanillaSchema = new mongoose.Schema({
+    numero: {
+        type: Number
+    },
     nombre: {
         type: String,  // TODO usar orden + slug
         required: true
     },
     prioritaria: {
+        type: Boolean,
+        default: false
+    },
+    pausa: {
         type: Boolean,
         default: false
     },
