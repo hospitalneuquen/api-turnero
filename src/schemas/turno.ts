@@ -32,6 +32,7 @@ export let turnoSchema = new mongoose.Schema({
         }]
     }],
 
+    ultimoEstado: String,
     estado: [{
         fecha: Date,
         valor: {

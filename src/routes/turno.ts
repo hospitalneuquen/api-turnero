@@ -6,7 +6,6 @@ import { Mongoose, Types } from "mongoose";
 // import * as utils from '../../../utils/utils';
 // import { defaultLimit, maxLimit } from './../../../config';
 const LETRAS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
-let step = 100;
 
 let router = express.Router();
 
@@ -78,7 +77,7 @@ router.get('/turnos/:id*/count', function (req, res, next) {
             { "$match": { "_id": id } },
             { "$unwind": "$numeros" },
             { "$match": { "numeros.ultimoEstado": 'libre' } },
-            ],
+        ],
 
             function (err, data) {
                 if (err) {
@@ -93,7 +92,6 @@ router.get('/turnos/:id*/count', function (req, res, next) {
 
     }
 });
-
 
 router.get('/turnos/:id*?', function (req, res, next) {
     if (req.params.id) {
@@ -132,34 +130,58 @@ router.get('/turnos', function (req, res, next) {
 
 router.post('/turnos', function (req, res, next) {
     let letras = [];
+    let letraInicio = '', letraFin = '';
+
     // to lower
     if (req.body.letraInicio) {
-        req.body.letraInicio = req.body.letraInicio.toLowerCase();
+        letraInicio = req.body.letraInicio.toLowerCase();
     }
 
     if (req.body.letraFin) {
-        req.body.letraFin = req.body.letraFin.toLowerCase();
+        letraFin = req.body.letraFin.toLowerCase();
     }
 
-    // filtramos las letras que vamos  utilizar
-    if (req.body.letraInicio && req.body.letraFin) {
-        let letras = LETRAS.filter((letra) => {
-            return (letra.charCodeAt(0) <= req.body.letraFin.charCodeAt(0)) ? letra : null;
-        });
-    }
 
     let turnos = new Turno(req.body);
     turnos['numeros'] = [];
 
-    console.log("LETRAS: ****************", letras);
-    if (letras.length) {
-        // recorremos las letras
-        letras.forEach(function (val, index) {
-            let i = 0;
+    // filtramos las letras que vamos  utilizar
+    if (letraInicio && letraFin) {
+        letras = LETRAS.filter((letra) => {
+            return (letra.charCodeAt(0) <= letraFin.charCodeAt(0)) ? letra : null;
+        });
+
+        if (letras.length) {
+            // recorremos las letras
+            letras.forEach(function (val, index) {
+                let i = 0;
+                // recorremos los numeros
+                for (i; i < req.body.step; i++) {
+                    var _turno = {
+                        letra: val,
+                        numero: i,
+                        llamado: 0,
+                        ultimoEstado: 'libre',
+                        ventanilla: null,
+                        estado: [{
+                            fecha: new Date(),
+                            valor: 'libre'
+                        }]
+                    };
+
+                    // console.log(_turno);
+
+                    turnos['numeros'].push(_turno);
+                }
+
+            });
+        }
+    } else  {
+        let i = req.body.numeroInicio;
             // recorremos los numeros
-            for (i; i < step; i++) {
+            for (i; i <= req.body.numeroFin; i++) {
                 var _turno = {
-                    letra: val,
+                    letra: null,
                     numero: i,
                     llamado: 0,
                     ultimoEstado: 'libre',
@@ -170,42 +192,25 @@ router.post('/turnos', function (req, res, next) {
                     }]
                 };
 
-                console.log(_turno);
+                // console.log(_turno);
 
                 turnos['numeros'].push(_turno);
             }
-
-        });
-    } else {
-        let i = req.body.numeroInicio;
-        // recorremos los numeros
-        for (i; i < req.body.numeroFin; i++) {
-            var _turno = {
-                letra: null,
-                numero: i,
-                llamado: 0,
-                ultimoEstado: 'libre',
-                ventanilla: null,
-                estado: [{
-                    fecha: new Date(),
-                    valor: 'libre'
-                }]
-            };
-
-            console.log(_turno);
-
-            turnos['numeros'].push(_turno);
-        }
     }
-    
 
+    // asignamos el ultimo estado de resumen
+    turnos['ultimoEstado'] = 'uso';
+    // cargamos el estado en el array de estados
+    turnos['estado'].push({ fecha: new Date(), valor: 'uso' });
+
+    // guardamos el turno
     turnos.save((err) => {
         if (err) {
             return next(err);
         }
 
         // console.log(typeof turnero);
-        // console.log();
+        console.log(turnos);
 
         res.json(turnos);
     });
@@ -257,6 +262,18 @@ router.patch('/turnos/:id', function (req, res, next) {
             modificacion = {
                 $inc: {
                     "numeros.$.llamado": req.body.valores.inc
+                }
+            };
+
+            options = { upsert: true };
+        } else if (req.body.accion === 'turnero_finalizado') {
+
+            modificacion = {
+                $push : {
+                    estado : req.body.valores.estado
+                },
+                $set: {
+                    "ultimoEstado": req.body.valores.ultimoEstado
                 }
             };
 
