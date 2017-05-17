@@ -176,26 +176,26 @@ router.post('/turnos', function (req, res, next) {
 
             });
         }
-    } else  {
+    } else {
         let i = req.body.numeroInicio;
-            // recorremos los numeros
-            for (i; i <= req.body.numeroFin; i++) {
-                var _turno = {
-                    letra: null,
-                    numero: i,
-                    llamado: 0,
-                    ultimoEstado: 'libre',
-                    ventanilla: null,
-                    estado: [{
-                        fecha: new Date(),
-                        valor: 'libre'
-                    }]
-                };
+        // recorremos los numeros
+        for (i; i <= req.body.numeroFin; i++) {
+            var _turno = {
+                letra: null,
+                numero: i,
+                llamado: 0,
+                ultimoEstado: 'libre',
+                ventanilla: null,
+                estado: [{
+                    fecha: new Date(),
+                    valor: 'libre'
+                }]
+            };
 
-                // console.log(_turno);
+            // console.log(_turno);
 
-                turnos['numeros'].push(_turno);
-            }
+            turnos['numeros'].push(_turno);
+        }
     }
 
     // asignamos el ultimo estado de resumen
@@ -218,6 +218,22 @@ router.post('/turnos', function (req, res, next) {
 
 router.put('/turnos/:id', function (req, res, next) {
     console.log('TODO: Reemplazar/validar uso de findByIdAndUpdate');
+
+    // Turno.findById(req.params.id, function (err, data) {
+
+    //     let turno = new Turno(data);
+
+    //     turno.isNew = false;
+
+    //     turno.save((err) => {
+    //         if (err) {
+    //             return next(err);
+    //         }
+    //         res.json(turno);
+    //     });
+
+    // });
+
     Turno.findByIdAndUpdate(req.params.id, req.body, { new: true }, function (err, data) {
         if (err) {
             return next(err);
@@ -269,8 +285,8 @@ router.patch('/turnos/:id', function (req, res, next) {
         } else if (req.body.accion === 'turnero_finalizado') {
 
             modificacion = {
-                $push : {
-                    estado : req.body.valores.estado
+                $push: {
+                    estado: req.body.valores.estado
                 },
                 $set: {
                     "ultimoEstado": req.body.valores.ultimoEstado
