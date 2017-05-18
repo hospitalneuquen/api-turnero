@@ -41,7 +41,7 @@ router.get('/ventanillas', function (req, res, next) {
     });
 });
 
-
+// Insert
 router.post('/ventanillas', function (req, res, next) {
 
     let insertVentanilla = new Ventanilla(req.body);
@@ -54,6 +54,7 @@ router.post('/ventanillas', function (req, res, next) {
     });
 });
 
+// Update
 router.put('/ventanillas/:id', function (req, res, next) {
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -90,40 +91,23 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
         });
     });
 
-    // let conditions = {};
-    // let modificacion = {};
-    // let options = {};
-
-    // conditions['_id'] = req.params.id;
-    // options = { upsert: true };
-
-    // modificacion = {
-    //     $set: {
-    //         "disponible": req.body.disponible
-    //     }
-    // };
-
-    // Turno.findByIdAndUpdate(req.params.id, modificacion , { upsert: true }, function (err, data) {
-    // Ventanilla.findOneAndUpdate(conditions, modificacion, options, function (err, data) {
-
-    //     if (err) {
-    //         return next(err);
-    //     }
-
-    //     res.json(data);
-
-    // });
-
 });
 
-// router.delete('/turnero/:id', function (req, res, next) {
-//     Ventanilla.findByIdAndRemove(req.params._id, function (err, data) {
-//         if (err) {
-//             return next(err);
-//         }
+router.delete('/ventanillas/:id', function (req, res, next) {
 
-//         res.json(data);
-//     });
-// });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return next('ObjectID Inválido');
+    }
+
+    Ventanilla.findById(req.params.id, (err, data) => {
+        data.remove((errOnPatch) => {
+            if (errOnPatch) {
+                return next(errOnPatch);
+            }
+            return res.json(data);
+        });
+    });
+
+});
 
 export = router;
