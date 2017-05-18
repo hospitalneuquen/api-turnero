@@ -41,26 +41,36 @@ router.get('/ventanillas', function (req, res, next) {
     });
 });
 
-router.post('/ventanillas', function (req, res, next) {
-    let ventanilla = new Ventanilla(req.body);
 
-    ventanilla.save((err) => {
+router.post('/ventanillas', function (req, res, next) {
+
+    let insertVentanilla = new Ventanilla(req.body);
+
+    insertVentanilla.save((err) => {
         if (err) {
             return next(err);
         }
-
-        res.json(ventanilla);
+        return res.json(insertVentanilla);
     });
 });
 
 router.put('/ventanillas/:id', function (req, res, next) {
-    Ventanilla.findByIdAndUpdate(req.params.id, req.body, { new: true }, function (err, data) {
-        if (err) {
-            return next(err);
-        }
 
-        res.json(data);
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return next('ObjectID Inválido');
+    }
+
+    let updateVentanilla = new Ventanilla(req.body);
+
+    updateVentanilla.isNew = false;
+
+    updateVentanilla.save((errOnPut) => {
+        if (errOnPut) {
+            return next(errOnPut);
+        }
+        return res.json(updateVentanilla);
     });
+
 });
 
 
@@ -71,10 +81,8 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
     }
 
     Ventanilla.findById(req.params.id, (err, data) => {
-        // Patch
         data.set(req.body.key, req.body.value);
-        data.save(function (errOnPatch) {
-
+        data.save((errOnPatch) => {
             if (errOnPatch) {
                 return next(errOnPatch);
             }
