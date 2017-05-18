@@ -5,7 +5,7 @@ export let ventanillaSchema = new mongoose.Schema({
         type: Number
     },
     nombre: {
-        type: String,  // TODO usar orden + slug
+        type: String,  // TODO usar slug + orden
         required: true
     },
     prioritaria: {

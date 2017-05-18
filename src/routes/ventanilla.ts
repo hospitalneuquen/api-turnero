@@ -70,32 +70,41 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
         return next('ObjectID Inválido');
     }
 
-    let conditions = {};
-    let modificacion = {};
-    let options = {};
+    Ventanilla.findById(req.params.id, (err, data) => {
+        // Patch
+        data.set(req.body.key, req.body.value);
+        data.save(function (errOnPatch) {
 
-    conditions['_id'] = req.params.id;
-    options = { upsert: true };
-
-
-    modificacion = {
-        $set: {
-            "disponible": req.body.disponible
-        }
-    };
-
-    // Turno.findByIdAndUpdate(req.params.id, modificacion , { upsert: true }, function (err, data) {
-    Ventanilla.findOneAndUpdate(conditions, modificacion, options, function (err, data) {
-
-        if (err) {
-            return next(err);
-        }
-
-        res.json(data);
-
+            if (errOnPatch) {
+                return next(errOnPatch);
+            }
+            return res.json(data);
+        });
     });
 
+    // let conditions = {};
+    // let modificacion = {};
+    // let options = {};
 
+    // conditions['_id'] = req.params.id;
+    // options = { upsert: true };
+
+    // modificacion = {
+    //     $set: {
+    //         "disponible": req.body.disponible
+    //     }
+    // };
+
+    // Turno.findByIdAndUpdate(req.params.id, modificacion , { upsert: true }, function (err, data) {
+    // Ventanilla.findOneAndUpdate(conditions, modificacion, options, function (err, data) {
+
+    //     if (err) {
+    //         return next(err);
+    //     }
+
+    //     res.json(data);
+
+    // });
 
 });
 
