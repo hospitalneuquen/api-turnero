@@ -100,9 +100,9 @@ router.delete('/ventanillas/:id', function (req, res, next) {
     }
 
     Ventanilla.findById(req.params.id, (err, data) => {
-        data.remove((errOnPatch) => {
-            if (errOnPatch) {
-                return next(errOnPatch);
+        data.remove((errOnDelete) => {
+            if (errOnDelete) {
+                return next(errOnDelete);
             }
             return res.json(data);
         });
