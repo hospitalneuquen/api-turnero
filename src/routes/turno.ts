@@ -9,6 +9,29 @@ const LETRAS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 
 let router = express.Router();
 
+// Variable global para anunciar cambios desde el servidor
+// Se puede setear dentro de cualquier ruta para anunciar cambios servidor ==> cliente
+let cambio: any = (new Date().getMilliseconds());
+
+
+// SSE
+router.get('/update', (req, res, next) => {
+
+    // Headers
+    res.setHeader('Content-type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    // Message
+    res.write('id: ' + (new Date().getMilliseconds()) + '\n');
+    res.write('retry: 500\n');
+
+    setInterval(() => {
+        res.write('data:' + JSON.stringify({ result: cambio }) + '\n\n') // Note the extra newline
+    }, 500);
+
+});
+
 router.get('/turnos/:id*/ventanilla/:ventanilla*', function (req, res, next) {
     if (req.params.id) {
         // en aggreggation framework mongoose no hace el parseo instantaneo 
@@ -57,11 +80,12 @@ router.get('/turnos/:id*/next', function (req, res, next) {
                 if (err) {
                     return next(err);
                 }
+                cambio = (new Date().getMilliseconds());
                 res.json(data);
             });
 
     } else {
-
+        return next('ID Inválido.');
     }
 });
 // db.getCollection('turnos').aggregate([{"$match": {"_id": ObjectId("58ee710153b5d847c868ce83")}}, { "$unwind": "$numeros" },{"$match": {"numeros.ultimoEstado": 'libre'}}, { $limit : 1 }])
@@ -296,6 +320,7 @@ router.patch('/turnos/:id', function (req, res, next) {
             options = { upsert: true };
         }
 
+        cambio = req.body.valores.ventanilla + '|' + (new Date().getMilliseconds());
 
     }
 

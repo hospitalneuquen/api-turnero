@@ -5,10 +5,13 @@ import * as express from "express";
 import * as path from "path";
 import * as mongoose from 'mongoose';
 import * as config from './config';
-import errorHandler = require("errorhandler");
-import methodOverride = require("method-override");
+import * as errorHandler from 'errorhandler';
+import * as methodOverride from 'method-override';
+import * as requireDir from 'require-dir';
 
-let requireDir = require('require-dir');
+
+// import * as sseExpress from 'sse-express';
+
 
 // import * as indexRoute from "./routes/index";
 
@@ -51,6 +54,9 @@ export class Server {
 
     //configure routes
     this.routes();
+
+
+
   }
 
 
@@ -62,6 +68,9 @@ export class Server {
    * @return void
    */
   private config() {
+
+
+
     //configure jade
     this.app.set("views", path.join(__dirname, "views"));
     this.app.set("view engine", "jade");
@@ -85,18 +94,22 @@ export class Server {
     //error handling
     this.app.use(errorHandler());
 
-    this.app.all('*', function (req, res, next) {
-        res.header('Access-Control-Allow-Origin', '*');
-        res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
-        // Permitir que el método OPTIONS funcione sin autenticación
-        if ('OPTIONS' === req.method) {
-            res.send(200);
-        } else {
-            next();
-        }
+
+    this.app.all('*', function (req, res, next) {
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+      // Permitir que el método OPTIONS funcione sin autenticación
+      if ('OPTIONS' === req.method) {
+        res.send(200);
+      } else {
+        next();
+      }
     });
+
+
 
     // // catch 404 and forward to error handler
     // this.app.use(function (err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -119,10 +132,10 @@ export class Server {
     mongoose.connect(config.db);
 
     mongoose.connection.on('connected', function () {
-        console.log('[Mongoose] Conexión OK');
+      console.log('[Mongoose] Conexión OK');
     });
     mongoose.connection.on('error', function (err) {
-        console.log('[Mongoose] No se pudo conectar al servidor');
+      console.log('[Mongoose] No se pudo conectar al servidor');
     });
   }
 
@@ -151,7 +164,7 @@ export class Server {
     for (var route in routes) {
       this.app.use('/api', routes[route]);
     }
-console.log(routes);
+    console.log(routes);
     //use router middleware
     this.app.use(router);
   }

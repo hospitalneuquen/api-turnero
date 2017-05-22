@@ -1,13 +1,16 @@
 import * as mongoose from 'mongoose';
+// import * as EventEmitter from 'events';
+// let updateEmitter = new EventEmitter();
 
 export let ventanillaSchema = new mongoose.Schema({
     numero: {
-        type: Number
-    },
-    nombre: {
-        type: String,  // TODO usar slug + orden
+        type: Number,
         required: true
     },
+    // nombre: {
+    //     type: String,  // TODO usar slug + orden
+    //     required: true
+    // },
     prioritaria: {
         type: Boolean,
         default: false
