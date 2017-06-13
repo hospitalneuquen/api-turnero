@@ -1,4 +1,4 @@
 
 export const db = 'mongodb://localhost/turnos';
 
-export const debugMode = true;
+export const debugMode = false

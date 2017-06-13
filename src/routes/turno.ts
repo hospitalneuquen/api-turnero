@@ -11,7 +11,7 @@ let router = express.Router();
 
 // Variable global para anunciar cambios desde el servidor
 // Se puede setear dentro de cualquier ruta para anunciar cambios servidor ==> cliente
-let cambio: any = (new Date().getMilliseconds());
+let cambio: any = { timestamp: new Date().getMilliseconds() };
 
 
 // SSE
@@ -32,7 +32,8 @@ router.get('/update', (req, res, next) => {
 
 });
 
-router.get('/turnos/:id*/ventanilla/:ventanilla*', function (req, res, next) {
+// Service getActual() en la App
+router.get('/turnos/:id*/ventanilla/:ventanilla', function (req, res, next) {
     if (req.params.id) {
         // en aggreggation framework mongoose no hace el parseo instantaneo 
         // del string al object id, asique lo hacemos a mano
@@ -63,9 +64,58 @@ router.get('/turnos/:id*/ventanilla/:ventanilla*', function (req, res, next) {
     }
 });
 
-router.get('/turnos/:id*/next', function (req, res, next) {
+router.get('/turnos/:id*/ventanilla/:ventanilla/prev', function (req, res, next) {
     if (req.params.id) {
         // en aggreggation framework mongoose no hace el parseo instantaneo 
+        // del string al object id, asique lo hacemos a mano
+        const id = Types.ObjectId(req.params.id);
+        const ventanilla = Types.ObjectId(req.params.ventanilla);
+
+        Turno.aggregate([
+
+            { '$project': { color: 1, tipo: 1, numeros: 1 } },
+            { '$match': { _id: id } },
+            { '$unwind': '$numeros' },
+            { '$match': { 'numeros.ultimoEstado': 'llamado', 'numeros.ventanilla': ventanilla } },
+            { '$unwind': '$numeros.estado' },
+            { '$match': { 'numeros.estado.valor': 'llamado' } },
+            { '$sort': { 'numeros.estado.fecha': -1 } }
+
+        ], function (err, data) {
+            if (err) {
+                return next(err);
+            }
+
+            console.log('data', data);
+
+
+            if (data.length > 1) {
+                cambio = {
+                    ventanilla: ventanilla,
+                    numeroAnterior: data[1].numeros.numero,
+                    tipo: data.tipo,
+                    timestamp: new Date().getMilliseconds()
+                };
+                res.json(data[1]);
+            }
+            else {
+                cambio = {
+                    ventanilla: ventanilla,
+                    tipo: data.tipo,
+                    timestamp: new Date().getMilliseconds()
+                };
+                res.json(data[0]);
+            }
+        });
+
+    } else {
+        return next('ID Inválido.');
+    }
+});
+
+router.get('/turnos/:id*/next', function (req, res, next) {
+    if (req.params.id) {
+        // en aggreggation reggaeton framework mongoose no hace el parseo instantaneo 
         // del string al object id, asique lo hacemos a mano
         const id = Types.ObjectId(req.params.id);
 
@@ -80,7 +130,9 @@ router.get('/turnos/:id*/next', function (req, res, next) {
                 if (err) {
                     return next(err);
                 }
-                cambio = (new Date().getMilliseconds());
+                cambio = {
+                    timestamp: new Date().getMilliseconds()
+                };
                 res.json(data);
             });
 
@@ -132,8 +184,6 @@ router.get('/turnos/:id*?', function (req, res, next) {
         if (req.query.tipo) {
             query.where('tipo').equals(req.query.tipo);
         }
-        console.log(req.body);
-        console.log(req.params);
         query.exec(function (err, data) {
             if (err) {
                 return next(err);
@@ -193,8 +243,6 @@ router.post('/turnos', function (req, res, next) {
                         }]
                     };
 
-                    // console.log(_turno);
-
                     turnos['numeros'].push(_turno);
                 }
 
@@ -216,8 +264,6 @@ router.post('/turnos', function (req, res, next) {
                 }]
             };
 
-            // console.log(_turno);
-
             turnos['numeros'].push(_turno);
         }
     }
@@ -232,9 +278,6 @@ router.post('/turnos', function (req, res, next) {
         if (err) {
             return next(err);
         }
-
-        // console.log(typeof turnero);
-        console.log(turnos);
 
         res.json(turnos);
     });
@@ -320,7 +363,6 @@ router.patch('/turnos/:id', function (req, res, next) {
             options = { upsert: true };
         }
 
-        cambio = req.body.valores.ventanilla + '|' + (new Date().getMilliseconds());
 
     }
 
@@ -331,6 +373,10 @@ router.patch('/turnos/:id', function (req, res, next) {
             return next(err);
         }
 
+        cambio = {
+            ventanilla: req.body.valores.ventanilla,
+            timestamp: new Date().getMilliseconds()
+        };
         res.json(data);
 
     });

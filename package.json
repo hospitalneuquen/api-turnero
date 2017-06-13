@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "NODE_ENV=development nodemon ./bin/www",
     "grunt": "grunt",
-    "start": "node ./bin/www",
+    "start": "nodemon ./bin/www",
     "postinstall": "node ./postinstall/index.ts"
   },
   "dependencies": {
