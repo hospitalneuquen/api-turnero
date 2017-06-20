@@ -1,14 +1,16 @@
 import * as express from 'express';
 import { Ventanilla } from '../schemas/ventanilla';
 import * as mongoose from 'mongoose';
+import * as redisCache from 'express-redis-cache';
 
 let router = express.Router();
+let cache = redisCache();
 
 // variable para anunciar cambios desde el servidor
 let cambio: any = (new Date().getMilliseconds());
 
 // SSE
-router.get('/update', (req, res, next) => {
+router.get('/update', cache.route(), (req, res, next) => {
 
     // Headers
     res.setHeader('Content-type', 'text/event-stream');

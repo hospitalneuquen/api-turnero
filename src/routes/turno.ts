@@ -2,12 +2,14 @@ import * as express from 'express';
 // import { Turnero } from '../models/turnero';
 import { Turno } from '../schemas/turno';
 import { Mongoose, Types } from "mongoose";
+import * as redisCache from 'express-redis-cache';
 
 // import * as utils from '../../../utils/utils';
 // import { defaultLimit, maxLimit } from './../../../config';
 const LETRAS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
 let router = express.Router();
+let cache = redisCache();
 
 // Variable global para anunciar cambios desde el servidor
 // Se puede setear dentro de cualquier ruta para anunciar cambios servidor ==> cliente
@@ -15,7 +17,7 @@ let cambio: any = { timestamp: new Date().getMilliseconds() };
 
 
 // SSE
-router.get('/update', (req, res, next) => {
+router.get('/update', cache.route(), (req, res, next) => {
 
     // Headers
     res.setHeader('Content-type', 'text/event-stream');

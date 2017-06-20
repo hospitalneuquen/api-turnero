@@ -10,6 +10,7 @@ import * as methodOverride from 'method-override';
 import * as requireDir from 'require-dir';
 
 
+
 // import * as sseExpress from 'sse-express';
 
 
@@ -23,6 +24,7 @@ import * as requireDir from 'require-dir';
 export class Server {
 
     public app: express.Application;
+    public cache: any;
 
     /**
      * Bootstrap the application.
@@ -45,6 +47,7 @@ export class Server {
     constructor() {
         //create expressjs application
         this.app = express();
+        // this.cache = cache();
 
         //configure db
         this.dbConnection();
@@ -54,11 +57,7 @@ export class Server {
 
         //configure routes
         this.routes();
-
-
-
     }
-
 
     /**
      * Configure application
@@ -104,7 +103,7 @@ export class Server {
 
             // Permitir que el método OPTIONS funcione sin autenticación
             if ('OPTIONS' === req.method) {
-                res.send(200);
+                res.sendStatus(200);
             } else {
                 next();
             }
