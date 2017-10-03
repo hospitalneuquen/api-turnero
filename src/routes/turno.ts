@@ -22,13 +22,21 @@ router.get('/update', (req, res, next) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // Message
-    res.write('id: ' + (new Date().getMilliseconds()) + '\n');
-    res.write('retry: 500\n');
 
-    setInterval(() => {
-        res.write('data:' + JSON.stringify({ result: cambio }) + '\n\n') // Note the extra newline
-    }, 500);
+    // setInterval(() => {
+    //     res.write('data:' + JSON.stringify({ result: cambio }) + '\n\n') // Note the extra newline
+    // }, 500);
+
+    (function emitThis() {
+        setTimeout(() => {
+            // Message
+            res.write('id: ' + (new Date().getMilliseconds()) + '\n');
+            res.write('retry: 500\n');
+            res.write('data:' + JSON.stringify({ result: cambio }) + '\n\n') // Note the extra newline
+            emitThis();
+        }, 500);
+    })();
+
 
 });
 
