@@ -15,10 +15,12 @@ export let turnoSchema = new mongoose.Schema({
         type: Number,
         default: 99
     },
-    ultimoNumero: Number,
-    color: String,
     letraInicio: String,
-    letraFin: String
+    letraFin: String,
+    color: String,
+    ultimaLetra: String,
+    ultimoNumero: Number,
+    ultimoNumeroFin: Number
 });
 
 export let Turno = mongoose.model('turnos', turnoSchema, 'turnos');

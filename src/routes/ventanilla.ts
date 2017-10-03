@@ -40,22 +40,23 @@ router.get('/ventanillas/:id*?', function (req, res, next) {
             res.json(data);
         });
     } else {
-        let query;
-        query = Ventanilla.find();
 
-        if (req.query.numero) {
-            query.where('numero').equals(req.query.numero);
+        let query = {};
+        query = {
+            ...(req.query.numeroVentanilla) && {'numeroVentanilla': req.query.numeroVentanilla},
+            ...(req.query.tipo) && {'tipo': req.query.tipo}
         }
 
-        query.exec(function (err, data) {
+        Ventanilla.find(query, (err, data) => {
             if (err) {
                 return next(err);
             }
+
             res.json(data);
         });
     }
 });
-
+/*
 // Get all
 router.get('/ventanillas', function (req, res, next) {
     Ventanilla.find(function (err, data) {
@@ -65,11 +66,15 @@ router.get('/ventanillas', function (req, res, next) {
         res.json(data);
     });
 });
+*/
 
 // Insert
 router.post('/ventanillas', function (req, res, next) {
 
-    let insertVentanilla = new Ventanilla(req.body);
+    let insertVentanilla: any = new Ventanilla(req.body);
+
+    insertVentanilla.ultimoComun = (insertVentanilla.ultimoComun) ? insertVentanilla.ultimoComun : 0;
+    insertVentanilla.ultimoPrioridad = (insertVentanilla.ultimoPrioridad) ? insertVentanilla.ultimoPrioridad : 0;
 
     insertVentanilla.save((err) => {
         if (err) {

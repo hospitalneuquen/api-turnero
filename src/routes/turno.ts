@@ -35,6 +35,7 @@ router.get('/update', (req, res, next) => {
 
 });
 
+/*
 router.get('/ventanillas', (req, res, next) => {
 
     let query = {};
@@ -51,6 +52,7 @@ router.get('/ventanillas', (req, res, next) => {
         res.json(data);
     })
 });
+*/
 
 router.get('/turnero/:id?', (req, res, next) => {
 
@@ -71,8 +73,46 @@ router.get('/turnero/:id?', (req, res, next) => {
 });
 
 router.post('/turnero', (req, res, next) => {
+    let letras = [];
+    let letraInicio = '', letraFin = '';
 
-    let turno = new Turno(req.body);
+    let turno: any = new Turno(req.body);
+
+    // to lower
+    if (req.body.letraInicio) {
+        turno.letraInicio = req.body.letraInicio.toLowerCase();
+    }
+
+    if (req.body.letraFin) {
+        turno.letraFin = req.body.letraFin.toLowerCase();
+    }
+
+    // si no se le ha pasado el ultimo numero, lo inicializamos en 0
+    if (!turno.ultimoNumero) {
+        turno.ultimoNumero = 0;
+    }
+
+    // filtramos las letras que vamos  utilizar
+    if (letraInicio && letraFin) {
+        console.log(1);
+        letras = LETRAS.filter((letra) => {
+            return (letra.charCodeAt(0) <= letraFin.charCodeAt(0)) ? letra : null;
+        });
+
+        if (letras.length) {
+            console.log(2);
+            turno.ultimoNumeroFin = (turno.numeroFin - turno.numeroInicio) * letras.length;
+        }
+    } else {
+        console.log(3);
+        if (turno.numeroInicio == 0) {
+            console.log(4);
+            turno.ultimoNumeroFin = turno.numeroFin + 1;
+        } else {
+            console.log(5);
+            turno.ultimoNumeroFin = (turno.numeroFin - turno.numeroInicio);
+        }
+    }
 
     turno.save((err, data) => {
         if (err) {
