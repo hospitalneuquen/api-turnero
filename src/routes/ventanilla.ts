@@ -1,16 +1,19 @@
+import { Turno } from './../schemas/turno';
 import * as express from 'express';
 import { Ventanilla } from '../schemas/ventanilla';
 import * as mongoose from 'mongoose';
 import * as redisCache from 'express-redis-cache';
 
 let router = express.Router();
-let cache = redisCache();
+// let cache = redisCache();
 
 // variable para anunciar cambios desde el servidor
 let cambio: any = (new Date().getMilliseconds());
 
+//  cache.route(),
+
 // SSE
-router.get('/update', cache.route(), (req, res, next) => {
+router.get('/update', (req, res, next) => {
 
     // Headers
     res.setHeader('Content-type', 'text/event-stream');
@@ -96,6 +99,12 @@ router.put('/ventanillas/:id', function (req, res, next) {
 
 });
 
+router.patch('/ventanilla/:id', (req, res, next) => {
+
+
+
+});
+
 // Cambios únicos del tipo { key: value }
 router.patch('/ventanillas/:id*?', function (req, res, next) {
 
@@ -103,26 +112,94 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
         return next('ObjectID Inválido');
     }
 
-    Ventanilla.findById(req.params.id, (err, data) => {
-        data.set(req.body.key, req.body.value);
-        data.save((errOnPatch) => {
-            if (errOnPatch) {
-                return next(errOnPatch);
-            }
+    switch (req.body.accion) {
+        case 'rellamar':
+            Ventanilla.findById(req.params.id, (err, data) => {
 
-            if (req.body.key === 'pausada') {
-                if (req.body.value === false) {
-                    cambio = 'reanudar-' + (new Date().getMilliseconds());
-                } else {
-                    cambio = 'pausar-' + (new Date().getMilliseconds());
-                }
-            } else {
-                cambio = (new Date().getMilliseconds());
-            }
+                data.isNew = false;
+                data.set('llamado', data.get('llamado') + 1);
 
-            return res.json(data);
-        });
-    });
+                data.save((err, data2) => {
+                    if (err) {
+                        return next(err);
+                    }
+                    res.json(data2);
+
+                });
+            });
+            break;
+        case 'siguiente':
+
+            // ventanilla hace click en btn siguiente
+            Ventanilla.findById(req.params.id, (err, ventanilla) => {
+
+                console.log('ventanilla', ventanilla);
+
+                // Turnero del mismo tipo
+                Turno.findOne({ tipo: req.body.tipo }, (err, turno) => {
+
+                    let tipo = (req.body.tipo === 'prioritario' ? 'ultimoNumeroPrioridad' : 'ultimoNumeroComun');
+
+                    turno.isNew = false;
+                    turno.set(tipo, turno.get(tipo) + 1);
+
+                    turno.save((err, turnero) => {
+
+                        console.log('turnero', turnero);
+
+                        ventanilla.isNew = false;
+                        ventanilla.set('llamado', 0);
+
+                        if (req.body.tipo === 'prioritario') {
+                            console.log('ultimoPrioridad', turnero.get('ultimoNumeroPrioridad'));
+
+                            ventanilla.set('ultimoPrioridad', ventanilla.get('ultimoPrioridad') + 1);
+                            turno.set('ultimoNumeroPrioridad', ventanilla.get('ultimoPrioridad') + 1);
+                        } else if (req.body.tipo === 'no-prioritario') {
+                            ventanilla.set('ultimoComun', ventanilla.get('ultimoComun') + 1);
+                            turno.set('ultimoNumeroComun', ventanilla.get('ultimoComun') + 1);
+                        }
+
+                        turno.save((err, data3) => {
+                            console.log('data3', data3);
+                        });
+
+                        ventanilla.save((err, data2) => {
+                            if (err) {
+                                return next(err);
+                            }
+                            res.json(data2);
+                        });
+
+                    });
+                });
+
+            });
+            break;
+        default:
+            Ventanilla.findById(req.params.id, (err, data) => {
+                data.set(req.body.key, req.body.value);
+                data.save((errOnPatch) => {
+                    if (errOnPatch) {
+                        return next(errOnPatch);
+                    }
+
+                    if (req.body.key === 'pausada') {
+                        if (req.body.value === false) {
+                            cambio = 'reanudar-' + (new Date().getMilliseconds());
+                        } else {
+                            cambio = 'pausar-' + (new Date().getMilliseconds());
+                        }
+                    } else {
+                        cambio = (new Date().getMilliseconds());
+                    }
+
+                    return res.json(data);
+                });
+            });
+            break;
+    }
+
 
 });
 

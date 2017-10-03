@@ -1,28 +1,19 @@
+import { Types } from 'mongoose';
 import * as mongoose from 'mongoose';
 // import * as EventEmitter from 'events';
 // let updateEmitter = new EventEmitter();
 
 export let ventanillaSchema = new mongoose.Schema({
-    numero: {
-        type: Number,
-        required: true
+    numeroVentanilla: Number,
+    ultimoComun: Number,
+    ultimoPrioridad: Number,
+    llamado: Number,
+    atendiendo: {
+        type: String,
+        enum: ['prioritario', 'no-prioritario']
     },
-    // nombre: {
-    //     type: String,  // TODO usar slug + orden
-    //     required: true
-    // },
-    prioritaria: {
-        type: Boolean,
-        default: false
-    },
-    pausa: {
-        type: Boolean,
-        default: false
-    },
-    disponible: {
-        type: Boolean,
-        default: false
-    },
+    disponible: Boolean,
+    pausa: Boolean
 });
 
 export let Ventanilla = mongoose.model('ventanillas', ventanillaSchema, 'ventanillas');
