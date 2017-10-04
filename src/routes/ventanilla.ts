@@ -7,10 +7,10 @@ import * as redisCache from 'express-redis-cache';
 let router = express.Router();
 // let cache = redisCache();
 
-// variable para anunciar cambios desde el servidor
-let cambio: any = (new Date().getMilliseconds());
+// Variable global para anunciar cambios desde el servidor
+// Se puede setear dentro de cualquier ruta para anunciar cambios servidor ==> cliente
 
-//  cache.route(),
+let cambio: any = { timestamp: new Date().getMilliseconds(), type: 'default', idVentanilla: null };
 
 // SSE
 router.get('/update', (req, res, next) => {
@@ -22,11 +22,11 @@ router.get('/update', (req, res, next) => {
 
     // Message
     res.write('id: ' + (new Date().getMilliseconds()) + '\n');
-    res.write('retry: 1000\n');
+    res.write('retry: 500\n');
 
     setInterval(() => {
         res.write('data:' + JSON.stringify({ result: cambio }) + '\n\n') // Note the extra newline
-    }, 1000);
+    }, 500);
 
 });
 
@@ -56,17 +56,6 @@ router.get('/ventanillas/:id*?', function (req, res, next) {
         });
     }
 });
-/*
-// Get all
-router.get('/ventanillas', function (req, res, next) {
-    Ventanilla.find(function (err, data) {
-        if (err) {
-            return next(err);
-        }
-        res.json(data);
-    });
-});
-*/
 
 // Insert
 router.post('/ventanillas', function (req, res, next) {
@@ -104,12 +93,6 @@ router.put('/ventanillas/:id', function (req, res, next) {
 
 });
 
-router.patch('/ventanilla/:id', (req, res, next) => {
-
-
-
-});
-
 // Cambios únicos del tipo { key: value }
 router.patch('/ventanillas/:id*?', function (req, res, next) {
 
@@ -128,6 +111,10 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                     if (err) {
                         return next(err);
                     }
+
+                    cambio.timestamp = (new Date().getMilliseconds());
+                    cambio.idVentanilla = data._id;
+
                     res.json(data2);
 
                 });
@@ -141,38 +128,31 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                 console.log('ventanilla', ventanilla);
 
                 // Turnero del mismo tipo
-                Turno.findOne({ tipo: req.body.tipo }, (err, turno) => {
-
-                    let tipo = (req.body.tipo === 'prioritario' ? 'ultimoNumeroPrioridad' : 'ultimoNumeroComun');
+                Turno.findById(req.body.idTurno, (err, turno) => {
 
                     turno.isNew = false;
-                    turno.set(tipo, turno.get(tipo) + 1);
+                    turno.set('ultimoNumero', turno.get('ultimoNumero') + 1);
 
                     turno.save((err, turnero) => {
-
-                        console.log('turnero', turnero);
 
                         ventanilla.isNew = false;
                         ventanilla.set('llamado', 0);
 
                         if (req.body.tipo === 'prioritario') {
-                            console.log('ultimoPrioridad', turnero.get('ultimoNumeroPrioridad'));
-
                             ventanilla.set('ultimoPrioridad', ventanilla.get('ultimoPrioridad') + 1);
-                            turno.set('ultimoNumeroPrioridad', ventanilla.get('ultimoPrioridad') + 1);
                         } else if (req.body.tipo === 'no-prioritario') {
                             ventanilla.set('ultimoComun', ventanilla.get('ultimoComun') + 1);
-                            turno.set('ultimoNumeroComun', ventanilla.get('ultimoComun') + 1);
                         }
-
-                        turno.save((err, data3) => {
-                            console.log('data3', data3);
-                        });
 
                         ventanilla.save((err, data2) => {
                             if (err) {
                                 return next(err);
                             }
+
+                            cambio.timestamp = (new Date().getMilliseconds());
+                            cambio.type = 'default';
+                            cambio.idVentanilla = ventanilla._id;
+
                             res.json(data2);
                         });
 
@@ -182,22 +162,28 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
             });
             break;
         default:
+            console.log("ENTRAMOS A DEFAULT");
             Ventanilla.findById(req.params.id, (err, data) => {
+                console.log("VEntanilla encontrada");
                 data.set(req.body.key, req.body.value);
                 data.save((errOnPatch) => {
                     if (errOnPatch) {
                         return next(errOnPatch);
                     }
 
-                    if (req.body.key === 'pausada') {
+                    if (req.body.key === 'pausa') {
                         if (req.body.value === false) {
-                            cambio = 'reanudar-' + (new Date().getMilliseconds());
+                            //cambio.type = 'reanudar';
+                            cambio.type = 'default';
                         } else {
-                            cambio = 'pausar-' + (new Date().getMilliseconds());
+                            cambio.type = 'pausar';
                         }
                     } else {
-                        cambio = (new Date().getMilliseconds());
+                        cambio.type = 'default';
                     }
+
+                    cambio.timestamp = (new Date().getMilliseconds());
+                    cambio.idVentanilla = data._id;
 
                     return res.json(data);
                 });

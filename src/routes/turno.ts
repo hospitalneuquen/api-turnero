@@ -12,48 +12,6 @@ const LETRAS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 let router = express.Router();
 // let cache = redisCache(null);
 
-// Variable global para anunciar cambios desde el servidor
-// Se puede setear dentro de cualquier ruta para anunciar cambios servidor ==> cliente
-let cambio: any = { timestamp: new Date().getMilliseconds() };
-
-
-// SSE
-router.get('/update', (req, res, next) => {
-
-    // Headers
-    res.setHeader('Content-type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    // Message
-    res.write('id: ' + (new Date().getMilliseconds()) + '\n');
-    res.write('retry: 500\n');
-
-    setInterval(() => {
-        res.write('data:' + JSON.stringify({ result: cambio }) + '\n\n') // Note the extra newline
-    }, 500);
-
-});
-
-/*
-router.get('/ventanillas', (req, res, next) => {
-
-    let query = {};
-    if (req.query.numeroVentanilla) {
-        query = { numeroVentanilla: req.query.numeroVentanilla }
-    } else {
-        query = { tipo: req.query.tipo };
-    }
-
-    Ventanilla.find(query, (err, data) => {
-        if (err) {
-            return next(err);
-        }
-        res.json(data);
-    })
-});
-*/
-
 router.get('/turnero/:id?', (req, res, next) => {
 
     let query = {};
@@ -94,22 +52,17 @@ router.post('/turnero', (req, res, next) => {
 
     // filtramos las letras que vamos  utilizar
     if (letraInicio && letraFin) {
-        console.log(1);
         letras = LETRAS.filter((letra) => {
             return (letra.charCodeAt(0) <= letraFin.charCodeAt(0)) ? letra : null;
         });
 
         if (letras.length) {
-            console.log(2);
             turno.ultimoNumeroFin = (turno.numeroFin - turno.numeroInicio) * letras.length;
         }
     } else {
-        console.log(3);
         if (turno.numeroInicio == 0) {
-            console.log(4);
             turno.ultimoNumeroFin = turno.numeroFin + 1;
         } else {
-            console.log(5);
             turno.ultimoNumeroFin = (turno.numeroFin - turno.numeroInicio);
         }
     }
