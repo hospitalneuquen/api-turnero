@@ -124,9 +124,6 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
 
             // ventanilla hace click en btn siguiente
             Ventanilla.findById(req.params.id, (err, ventanilla) => {
-
-                console.log('ventanilla', ventanilla);
-
                 // Turnero del mismo tipo
                 Turno.findById(req.body.idTurno, (err, turno) => {
 
@@ -160,11 +157,61 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                 });
 
             });
-            break;
+        break;
+        case 'cambiar_turno':
+
+            // ventanilla hace click en btn siguiente
+            Ventanilla.findById(req.params.id, (err, ventanilla) => {
+
+                ventanilla.isNew = false;
+
+                if (req.body.tipo === 'prioritario') {
+                    ventanilla.set('ultimoPrioridad', 0);
+                } else if (req.body.tipo === 'no-prioritario') {
+                    ventanilla.set('ultimoComun', 0);
+                }
+
+                ventanilla.set('llamado', 0);
+
+                // Turnero del mismo tipo
+                Turno.findById(req.body.idTurno, (err, turno) => {
+
+                    turno.isNew = false;
+                    turno.set('estado', 'finalizado');
+
+                    turno.save((err, turnero) => {
+
+
+                        ventanilla.save((err, data2: any) => {
+                            if (err) {
+                                return next(err);
+                            }
+
+                            cambio.timestamp = (new Date().getMilliseconds());
+                            cambio.type = 'default';
+                            cambio.idVentanilla = ventanilla._id;
+
+                            res.json(data2);
+                            /*
+                            // buscamos la proxima 
+                            Ventanilla.find({'numeroVentanilla': data2.numeroVentanilla, tipo: data2.tipo}, (err, data3) => {
+                                if (err) {
+                                    return next(err);
+                                }
+
+                                res.json(data3);
+                            });*/
+                        });
+
+                    });
+                });
+
+            });
+        break;
         default:
-            console.log("ENTRAMOS A DEFAULT");
+
             Ventanilla.findById(req.params.id, (err, data) => {
-                console.log("VEntanilla encontrada");
+
                 data.set(req.body.key, req.body.value);
                 data.save((errOnPatch) => {
                     if (errOnPatch) {

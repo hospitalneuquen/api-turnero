@@ -18,9 +18,11 @@ export let turnoSchema = new mongoose.Schema({
     letraInicio: String,
     letraFin: String,
     color: String,
-    ultimaLetra: String,
     ultimoNumero: Number,
-    ultimoNumeroFin: Number
+    estado: {
+        type: String,
+        enum: ['activo', 'finalizado']
+    }
 });
 
 export let Turno = mongoose.model('turnos', turnoSchema, 'turnos');
