@@ -125,20 +125,28 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
             // ventanilla hace click en btn siguiente
             Ventanilla.findById(req.params.id, (err, ventanilla) => {
                 // Turnero del mismo tipo
-                Turno.findById(req.body.idTurno, (err, turno) => {
+                Turno.findById(req.body.idTurno, (err, turno: any) => {
 
                     turno.isNew = false;
                     turno.set('ultimoNumero', turno.get('ultimoNumero') + 1);
 
+                    if (turno.ultimoNumero === turno.numeroFin) {
+                        turno.set('estado', 'finalizado');
+                    }
+
                     turno.save((err, turnero) => {
 
                         ventanilla.isNew = false;
-                        ventanilla.set('llamado', 0);
+                        ventanilla.set('llamado', 1);
 
                         if (req.body.tipo === 'prioritario') {
-                            ventanilla.set('ultimoPrioridad', ventanilla.get('ultimoPrioridad') + 1);
+                            //ventanilla.set('ultimoPrioridad', ventanilla.get('ultimoPrioridad') + 1);
+                            ventanilla.set('ultimoPrioridad', turno.get('ultimoNumero'));
+                            ventanilla.set('atendiendo', 'prioritario');
                         } else if (req.body.tipo === 'no-prioritario') {
-                            ventanilla.set('ultimoComun', ventanilla.get('ultimoComun') + 1);
+                            //ventanilla.set('ultimoComun', ventanilla.get('ultimoComun') + 1);
+                            ventanilla.set('ultimoComun', turno.get('ultimoNumero'));
+                            ventanilla.set('atendiendo', 'no-prioritario');
                         }
 
                         ventanilla.save((err, data2) => {
@@ -168,7 +176,7 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                 if (req.body.tipo === 'prioritario') {
                     ventanilla.set('ultimoPrioridad', 0);
                 } else if (req.body.tipo === 'no-prioritario') {
-                    ventanilla.set('ultimoComun', 0);
+                    ventanilla.set('ultimoComun', 0);                   
                 }
 
                 ventanilla.set('llamado', 0);
@@ -192,15 +200,6 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                             cambio.idVentanilla = ventanilla._id;
 
                             res.json(data2);
-                            /*
-                            // buscamos la proxima 
-                            Ventanilla.find({'numeroVentanilla': data2.numeroVentanilla, tipo: data2.tipo}, (err, data3) => {
-                                if (err) {
-                                    return next(err);
-                                }
-
-                                res.json(data3);
-                            });*/
                         });
 
                     });
