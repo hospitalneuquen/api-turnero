@@ -25,4 +25,18 @@ export let turnoSchema = new mongoose.Schema({
     }
 });
 
+/*
+turnoSchema.pre('save', function(turno, next) {
+    // algunas validaciones
+    if (turno.numeroInicio < 0) {
+        return res.status(500).send({status:500, message: 'El número de inicio debe ser mayor que 0 (cero)', type:'internal'});
+    }
+
+    if (turno.numeroFin < 0) {
+        return res.status(500).send({status:500, message: 'El número final debe ser mayor que 0 (cero)', type:'internal'});
+    }
+    next();
+});
+*/
+
 export let Turno = mongoose.model('turnos', turnoSchema, 'turnos');

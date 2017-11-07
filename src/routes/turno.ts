@@ -27,7 +27,6 @@ router.get('/turnero/:id?', (req, res, next) => {
     }
 
     Turno.find(query, (err, data) => {
-        console.log(data);
         if (err) {
             return next(err);
         }
@@ -43,6 +42,20 @@ router.post('/turnero', (req, res, next) => {
     let turno: any = new Turno(req.body);
     
     turno.estado = (turno.estado) ? turno.estado : 'activo';
+
+    turno.numeroInicio = parseInt(turno.numeroInicio);
+    turno.numeroFin = parseInt(turno.numeroFin);
+
+    if (turno.numeroInicio < 0) {
+        return res.status(500).send({status:500, message: 'El número de inicio debe ser mayor que 0 (cero)', type:'internal'});
+        //return next(new Error('El número de inicio debe ser mayor que 0 (cero)'));
+
+    }
+
+    if (turno.numeroFin < 0) {
+        return res.status(500).send({status:500, message: 'El número final debe ser mayor que 0 (cero)', type:'internal'});
+        //return next(new Error(El número final debe ser mayor que 0 (cero)'));
+    }
 
     // to lower
     if (req.body.letraInicio) {
