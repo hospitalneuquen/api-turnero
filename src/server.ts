@@ -68,8 +68,6 @@ export class Server {
      */
     private config() {
 
-
-
         //configure jade
         this.app.set("views", path.join(__dirname, "views"));
         this.app.set("view engine", "jade");
@@ -92,7 +90,43 @@ export class Server {
 
         //error handling
         this.app.use(errorHandler());
+        /*
+        // Error handler
+        this.app.use(function (err: any, req, res, next) {
+            console.log(err);
+            console.log("ENTRAMOS HAY ERROR");
+            if (err) {
+                console.log("HAY ERROR");
+                
+                // // Parse err
+                // let _error: Error;
+                // if (!isNaN(err)) {
+                //     _error = new Error(HttpStatus.getStatusText(err));
+                //     (_error as any).status = err;
+                // } else {
+                //     if (typeof err === 'string') {
+                //         _error = new Error(err);
+                //         (_error as any).status = 400;
 
+                //     } else {
+                //         err.status = 500;
+                //     }
+                // }
+
+                // err = _error;
+                
+                // IMPORTANTE: Express app.get('env') returns 'development' if NODE_ENV is not defined.
+                // O sea, la API está corriendo siempre en modo development
+
+                // Send response
+                res.status(err.status);
+                res.send({
+                    message: err.message,
+                    error: (this.app.get('env') === 'development') ? err : null
+                });
+            }
+        });
+        */
 
 
         this.app.all('*', function (req, res, next) {
@@ -164,7 +198,7 @@ export class Server {
         for (var route in routes) {
             this.app.use('/api', routes[route]);
         }
-        console.log(routes);
+        //console.log(routes);
         //use router middleware
         this.app.use(router);
     }

@@ -47,13 +47,15 @@ router.post('/turnero', (req, res, next) => {
     turno.numeroFin = parseInt(turno.numeroFin);
 
     if (turno.numeroInicio < 0) {
-        return res.status(500).send({status:500, message: 'El número de inicio debe ser mayor que 0 (cero)', type:'internal'});
+        res.status(500).send({status:500, message: 'El número de inicio debe ser mayor que 0 (cero)', type:'internal'});
+        return next();
         //return next(new Error('El número de inicio debe ser mayor que 0 (cero)'));
 
     }
 
     if (turno.numeroFin < 0) {
-        return res.status(500).send({status:500, message: 'El número final debe ser mayor que 0 (cero)', type:'internal'});
+        res.status(500).send({status:500, message: 'El número final debe ser mayor que 0 (cero)', type:'internal'});
+        return next();
         //return next(new Error(El número final debe ser mayor que 0 (cero)'));
     }
 
@@ -68,9 +70,10 @@ router.post('/turnero', (req, res, next) => {
     }
     */
 
-    // si no se le ha pasado el ultimo numero, lo inicializamos en 0
+    // si no se le ha pasado el ultimo numero, lo inicializamos en -1 
+    // y de esta forma sabemos que aun no ha comenzado
     if (!turno.ultimoNumero) {
-        turno.ultimoNumero = 0;
+        turno.ultimoNumero = turno.numeroInicio - 1;
     }
 
     // filtramos las letras que vamos  utilizar

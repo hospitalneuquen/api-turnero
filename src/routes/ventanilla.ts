@@ -124,8 +124,15 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
 
             // ventanilla hace click en btn siguiente
             Ventanilla.findById(req.params.id, (err, ventanilla) => {
+                if (err) {
+                    return next(err);
+                }
+
                 // Turnero del mismo tipo
                 Turno.findById(req.body.idTurno, (err, turno: any) => {
+                    if (err) {
+                        return next(err);
+                    }
 
                     turno.isNew = false;
                     turno.set('ultimoNumero', turno.get('ultimoNumero') + 1);
