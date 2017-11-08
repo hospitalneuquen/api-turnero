@@ -5,8 +5,14 @@ import * as mongoose from 'mongoose';
 
 export let ventanillaSchema = new mongoose.Schema({
     numeroVentanilla: Number,
-    ultimoComun: Number,
-    ultimoPrioridad: Number,
+    // ultimoComun: Number,
+    // ultimoPrioridad: Number,
+    ultimo: {
+        numero: Number,
+        tipo: String,
+        letra: String,
+        color: String
+    },
     llamado: Number,
     atendiendo: {
         type: String,

@@ -10,7 +10,7 @@ let router = express.Router();
 // Variable global para anunciar cambios desde el servidor
 // Se puede setear dentro de cualquier ruta para anunciar cambios servidor ==> cliente
 
-let cambio: any = { timestamp: new Date().getMilliseconds(), type: 'default', idVentanilla: null };
+let cambio: any = { timestamp: new Date().getMilliseconds(), type: 'default', idVentanilla: null, ventanilla: {} };
 
 // SSE
 router.get('/update', (req, res, next) => {
@@ -62,8 +62,14 @@ router.post('/ventanillas', function (req, res, next) {
 
     let insertVentanilla: any = new Ventanilla(req.body);
 
-    insertVentanilla.ultimoComun = (insertVentanilla.ultimoComun) ? insertVentanilla.ultimoComun : 0;
-    insertVentanilla.ultimoPrioridad = (insertVentanilla.ultimoPrioridad) ? insertVentanilla.ultimoPrioridad : 0;
+    //insertVentanilla.ultimoComun = (insertVentanilla.ultimoComun) ? insertVentanilla.ultimoComun : 0;
+    //insertVentanilla.ultimoPrioridad = (insertVentanilla.ultimoPrioridad) ? insertVentanilla.ultimoPrioridad : 0;
+    insertVentanilla.ultimo = {
+        numero: 0,
+        tipo: null,
+        letra: null,
+        color: null
+    };
 
     insertVentanilla.save((err) => {
         if (err) {
@@ -94,6 +100,7 @@ router.put('/ventanillas/:id', function (req, res, next) {
 });
 
 // Cambios únicos del tipo { key: value }
+// return object: ventanilla & turno
 router.patch('/ventanillas/:id*?', function (req, res, next) {
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -134,41 +141,87 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                         return next(err);
                     }
 
-                    turno.isNew = false;
-                    turno.set('ultimoNumero', turno.get('ultimoNumero') + 1);
+                    if (turno.estado === 'activo') {
+                        turno.isNew = false;
 
-                    if (turno.ultimoNumero === turno.numeroFin) {
-                        turno.set('estado', 'finalizado');
-                    }
-
-                    turno.save((err, turnero) => {
-
-                        ventanilla.isNew = false;
-                        ventanilla.set('llamado', 1);
-
-                        if (req.body.tipo === 'prioritario') {
-                            //ventanilla.set('ultimoPrioridad', ventanilla.get('ultimoPrioridad') + 1);
-                            ventanilla.set('ultimoPrioridad', turno.get('ultimoNumero'));
-                            ventanilla.set('atendiendo', 'prioritario');
-                        } else if (req.body.tipo === 'no-prioritario') {
-                            //ventanilla.set('ultimoComun', ventanilla.get('ultimoComun') + 1);
-                            ventanilla.set('ultimoComun', turno.get('ultimoNumero'));
-                            ventanilla.set('atendiendo', 'no-prioritario');
+                        // si el ultimo numero llamado del turno es menor al de finalizacion, incrementamos
+                        if (turno.ultimoNumero < turno.numeroFin) {
+                            turno.set('ultimoNumero', turno.get('ultimoNumero') + 1);
                         }
 
-                        ventanilla.save((err, data2) => {
+                        // si son iguales y aun esta activo, entonces finalizamos el turno
+                        if (turno.ultimoNumero === turno.numeroFin && turno.estado === 'activo') {
+                            turno.set('estado', 'finalizado');
+                        }
+
+                        turno.save((err, turnero) => {
+
+                            ventanilla.isNew = false;
+                            ventanilla.set('llamado', 1);
+
+                            const ultimo = {
+                                numero: turno.ultimoNumero,
+                                tipo: (req.body.tipo === 'prioritario') ? 'prioritario' : 'no-prioritario',
+                                letra: turno.letraInicio,
+                                color: turno.color
+                            };
+                            
+                            // seteamos el ultimo turno llamado desde la ventanilla
+                            ventanilla.set('ultimo', ultimo);
+
+                            // indicamos que tipo de turno esta atendiendo
+                            ventanilla.set('atendiendo', (req.body.tipo === 'prioritario') ? 'prioritario' : 'no-prioritario');
+
+                            // guardamos la info de la ventanilla
+                            ventanilla.save((err, data2: any) => {
+                                if (err) {
+                                    return next(err);
+                                }
+
+                                // armamos el documento a devolver, que tendra la ventanilla
+                                // y el turno en un mismo objeto
+                                let dto = {
+                                    ventanilla: data2,
+                                    turno: turnero
+                                };
+
+                                // seteamos la variable de cambio para enviar el SSE
+                                cambio.timestamp = (new Date().getMilliseconds());
+                                cambio.type = 'default';
+                                cambio.idVentanilla = ventanilla._id;
+                                cambio.ventanilla = data2;
+                                cambio.ventanilla['turno'] = turnero;
+
+                                console.log(cambio);
+
+                                // devolvemos!
+                                res.json(dto);
+                            });
+
+                        });
+                    } else {
+                        // si esta finalizado el turnero, buscamos el proximo en estado activo
+                        Turno.findOne({'estado': 'activo'}, (err, turnero) => {
                             if (err) {
                                 return next(err);
                             }
 
+                            let dto = {
+                                ventanilla: ventanilla,
+                                turno: turnero
+                            };
+
+                            // seteamos la variable de cambio para enviar el SSE
                             cambio.timestamp = (new Date().getMilliseconds());
                             cambio.type = 'default';
                             cambio.idVentanilla = ventanilla._id;
-
-                            res.json(data2);
-                        });
-
-                    });
+                            cambio.ventanilla = ventanilla;
+                            cambio.ventanilla['turno'] = turnero;
+    
+                            res.json(dto);
+                        }); 
+                    
+                    }
                 });
 
             });
@@ -177,19 +230,30 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
 
             // ventanilla hace click en btn siguiente
             Ventanilla.findById(req.params.id, (err, ventanilla) => {
+                if (err) {
+                    return next(err);
+                }
 
                 ventanilla.isNew = false;
 
+                /*
                 if (req.body.tipo === 'prioritario') {
                     ventanilla.set('ultimoPrioridad', 0);
                 } else if (req.body.tipo === 'no-prioritario') {
                     ventanilla.set('ultimoComun', 0);                   
                 }
+                */
 
-                ventanilla.set('llamado', 0);
+                ventanilla.set('llamado', 1);
 
                 // Turnero del mismo tipo
+                /*
                 Turno.findById(req.body.idTurno, (err, turno) => {
+
+                    if (err || !turno) {
+                        return next(err);
+                    }
+
 
                     turno.isNew = false;
                     turno.set('estado', 'finalizado');
@@ -205,12 +269,37 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                             cambio.timestamp = (new Date().getMilliseconds());
                             cambio.type = 'default';
                             cambio.idVentanilla = ventanilla._id;
+                            cambio.ventanilla = data2;
+                            cambio.ventanilla['turno'] = turnero;
+
 
                             res.json(data2);
                         });
 
                     });
                 });
+                */
+
+                 // si esta finalizado el turnero, buscamos el proximo en estado activo
+                 Turno.findOne({'estado': 'activo'}, (err, turnero) => {
+                    if (err) {
+                        return next(err);
+                    }
+
+                    let dto = {
+                        ventanilla: ventanilla,
+                        turno: turnero
+                    };
+
+                    // seteamos la variable de cambio para enviar el SSE
+                    cambio.timestamp = (new Date().getMilliseconds());
+                    cambio.type = 'default';
+                    cambio.idVentanilla = ventanilla._id;
+                    cambio.ventanilla = ventanilla;
+                    cambio.ventanilla['turno'] = turnero;
+
+                    res.json(dto);
+                }); 
 
             });
         break;
@@ -237,6 +326,11 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
 
                     cambio.timestamp = (new Date().getMilliseconds());
                     cambio.idVentanilla = data._id;
+
+
+                    cambio.ventanilla = data;
+                    //cambio.ventanilla['turno'] = turnero;
+
 
                     return res.json(data);
                 });
