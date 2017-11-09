@@ -35,6 +35,8 @@ router.get('/turnero/:id?', (req, res, next) => {
     });
 });
 
+
+
 router.post('/turnero', (req, res, next) => {
     let letras = [];
     //let letraInicio = '', letraFin = '';
@@ -95,12 +97,70 @@ router.post('/turnero', (req, res, next) => {
     }
     */
 
-    turno.save((err, data) => {
+    /** COMIENZO DEL CALLBACK HELL :D :D :D */
+    const conditions = {
+        tipo: turno.prioridad, 
+        estado: 'activo',
+        letraInicio: turno.letra, 
+        //{$and: [{numeroInicio: {$lte: 1}, numeroInicio: {$lte: 4}}, {numeroFin: {$lte: 1}, numeroFin: {$gte: 4} }]} // working on robomongo
+        $and: [
+            {
+                numeroInicio: {$lte: turno.numeroInicio}, 
+            },
+            {
+                numeroInicio: {$lte: turno.numeroFin }
+            },
+            {
+                numeroFin: { $lte: turno.numeroInicio },
+            },
+            {
+                numeroFin: { $gte: turno.numeroFin } 
+            }
+
+            // {
+            //     numeroInicio: {$lte: turno.numeroInicio}, numeroFin: {$lte: turno.numeroFin }
+            // },
+            // {
+            //     numeroInicio: { $gte: turno.numeroInicio }, numeroFin: { $gte: turno.numeroFin } 
+            // }
+        ]
+
+        // numeroInicio: { $gte: turno.numeroInicio, $lte: turno.numeroFin },  
+        // numeroFin: { $gte: turno.numeroInicio, $lte: turno.numeroFin}
+    };
+     
+    // db.getCollection('turnos').find({$and : [ {numeroInicio: {$gte: 1, $lte: 4}, numeroFin: { $gte: 1, $lte: 4} } ] });
+
+    // db.getCollection('turnos').find({$and : [
+    //     { $or : [ {numeroInicio: {$gte: 1, $lte: 4} } ] },
+    //     { $or : [ {numeroFin: { $gte: 1, $lte: 4} } ] }
+    // ] });
+
+    
+
+    Turno.find(conditions, (err, exists) => {
         if (err) {
             return next(err);
         }
-        res.json(data);
+        
+        debugger;
+        if (exists.length > 0) {
+            console.log('Ya existe el turno de este tipo y con esa letra y numeración');
+            res.status(500).send({status:500, message: 'Ya existe el turno de este tipo y con esa letra y numeración', type:'internal'});
+            return next();
+        }
+
+
+        turno.save((err, data) => {
+            if (err) {
+                return next(err);
+            }
+
+            res.json(data);
+        });
     });
+
+    
 });
 
 router.put('/turnero/:id', (req, res, next) => {

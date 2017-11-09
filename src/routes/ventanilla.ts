@@ -120,7 +120,10 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                     }
 
                     cambio.timestamp = (new Date().getMilliseconds());
-                    cambio.idVentanilla = data._id;
+                    cambio.type = 'default';
+                    cambio.idVentanilla = data2._id;
+                    cambio.ventanilla = data2;
+
 
                     res.json(data2);
 
@@ -178,49 +181,176 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                                     return next(err);
                                 }
 
-                                // armamos el documento a devolver, que tendra la ventanilla
-                                // y el turno en un mismo objeto
-                                let dto = {
-                                    ventanilla: data2,
-                                    turno: turnero
-                                };
+                                // if (turnero.estado === 'activo') {
+                                    // armamos el documento a devolver, que tendra la ventanilla
+                                    // y el turno en un mismo objeto
+                                    let dto = {
+                                        ventanilla: data2,
+                                        turno: turnero
+                                    };
 
-                                // seteamos la variable de cambio para enviar el SSE
-                                cambio.timestamp = (new Date().getMilliseconds());
-                                cambio.type = 'default';
-                                cambio.idVentanilla = ventanilla._id;
-                                cambio.ventanilla = data2;
-                                cambio.ventanilla['turno'] = turnero;
+                                    // seteamos la variable de cambio para enviar el SSE
+                                    cambio.timestamp = (new Date().getMilliseconds());
+                                    cambio.type = 'default';
+                                    cambio.idVentanilla = ventanilla._id;
+                                    cambio.ventanilla = data2;
+                                    cambio.ventanilla['turno'] = turnero;
 
-                                console.log(cambio);
+                                    console.log(cambio);
 
-                                // devolvemos!
-                                res.json(dto);
+                                    // devolvemos!
+                                    res.json(dto);
+                                // } else {
+                                    /*
+                                    Turno.findOne({'estado': 'activo'}, (errNuevo, turneroNuevo) => {
+                                        debugger;
+
+                                        turneroNuevo.set('ultimoNumero', turno.get('ultimoNumero') + 1);
+
+                                        turneroNuevo.save((errNuevo, turneroNuevoSave: any) => {
+
+                                            const ultimo = {
+                                                numero: turneroNuevoSave.ultimoNumero,
+                                                tipo: (req.body.tipo === 'prioritario') ? 'prioritario' : 'no-prioritario',
+                                                letra: turneroNuevoSave.letraInicio,
+                                                color: turneroNuevoSave.color
+                                            };
+                                            // seteamos el ultimo turno llamado desde la ventanilla
+                                            ventanilla.set('ultimo', ultimo);
+
+                                            // armamos el documento a devolver, que tendra la ventanilla
+                                            // y el turno en un mismo objeto
+                                            let dto = {
+                                                ventanilla: data2,
+                                                turno: turneroNuevoSave
+                                            };
+
+                                            // seteamos la variable de cambio para enviar el SSE
+                                            cambio.timestamp = (new Date().getMilliseconds());
+                                            cambio.type = 'default';
+                                            cambio.idVentanilla = ventanilla._id;
+                                            cambio.ventanilla = data2;
+                                            cambio.ventanilla['turno'] = turneroNuevoSave;
+
+                                            console.log(cambio);
+
+                                            data2.save((err3, data3: any) => {
+                                                if (err3) {
+                                                    return next(err3);
+                                                }
+                                                // devolvemos!
+                                                res.json(dto);
+                                            });
+                                        });
+
+                                    });
+                                    */
+                                // }
+
+                                
                             });
 
                         });
                     } else {
+                        /*
                         // si esta finalizado el turnero, buscamos el proximo en estado activo
-                        Turno.findOne({'estado': 'activo'}, (err, turnero) => {
+                        Turno.findOne({'estado': 'activo'}, (err, turneroNuevo: any) => {
+                            debugger;
                             if (err) {
                                 return next(err);
                             }
 
-                            let dto = {
-                                ventanilla: ventanilla,
-                                turno: turnero
+                            ventanilla.isNew = false;
+                            ventanilla.set('llamado', 1);
+                            const ultimo = {
+                                numero: turneroNuevo.ultimoNumero,
+                                tipo: (req.body.tipo === 'prioritario') ? 'prioritario' : 'no-prioritario',
+                                letra: turneroNuevo.letraInicio,
+                                color: turneroNuevo.color
                             };
-
-                            // seteamos la variable de cambio para enviar el SSE
-                            cambio.timestamp = (new Date().getMilliseconds());
-                            cambio.type = 'default';
-                            cambio.idVentanilla = ventanilla._id;
-                            cambio.ventanilla = ventanilla;
-                            cambio.ventanilla['turno'] = turnero;
+                            ventanilla.set('ultimo', ultimo);
+                            ventanilla.set('atendiendo', (req.body.tipo === 'prioritario') ? 'prioritario' : 'no-prioritario');
     
-                            res.json(dto);
+                            ventanilla.save((err, data2) => {
+                                if (err) {
+                                    return next(err);
+                                }
+
+                                let dto = {
+                                    ventanilla: data2,
+                                    turno: turneroNuevo
+                                };
+                                cambio.timestamp = (new Date().getMilliseconds());
+                                cambio.type = 'default';
+                                cambio.idVentanilla = data2._id;
+                                cambio.ventanilla = data2;
+                                cambio.ventanilla['turno'] = turneroNuevo;
+
+
+                                turneroNuevo.set('ultimoNumero', turneroNuevo.get('ultimoNumero') + 1);
+
+                                res.json(dto);
+                            });
+
                         }); 
-                    
+                        */
+
+                        Turno.findOne({'estado': 'activo'}, (errNuevo, turneroNuevo: any) => {
+                            debugger;
+                            if (errNuevo) {
+                                return next(errNuevo);
+                            }
+                            if (!turneroNuevo) {
+                                // seteamos la variable de cambio para enviar el SSE
+                                cambio.timestamp = (new Date().getMilliseconds());
+                                cambio.type = 'default';
+                                cambio.idVentanilla = ventanilla._id;
+                                cambio.ventanilla = ventanilla;
+                                cambio.ventanilla['turno'] = null;
+
+                                return res.json(cambio.ventanilla);
+                            }
+
+                            turneroNuevo.set('ultimoNumero', turneroNuevo.get('ultimoNumero') + 1);
+
+                            turneroNuevo.save((errNuevo, turneroNuevoSave: any) => {
+
+                                const ultimo = {
+                                    numero: turneroNuevo.ultimoNumero,
+                                    tipo: (req.body.tipo === 'prioritario') ? 'prioritario' : 'no-prioritario',
+                                    letra: turneroNuevo.letraInicio,
+                                    color: turneroNuevo.color
+                                };
+
+                                // seteamos el ultimo turno llamado desde la ventanilla
+                                ventanilla.set('ultimo', ultimo);
+                                
+                                ventanilla.save((err3, data3: any) => {
+                                    if (err3) {
+                                        return next(err3);
+                                    }
+
+                                    // armamos el documento a devolver, que tendra la ventanilla
+                                    // y el turno en un mismo objeto
+                                    let dto = {
+                                        ventanilla: data3,
+                                        turno: turneroNuevo
+                                    };
+
+                                    // seteamos la variable de cambio para enviar el SSE
+                                    cambio.timestamp = (new Date().getMilliseconds());
+                                    cambio.type = 'default';
+                                    cambio.idVentanilla = ventanilla._id;
+                                    cambio.ventanilla = ventanilla;
+                                    cambio.ventanilla['turno'] = turneroNuevo;
+    
+                                    console.log(cambio);
+                                    // devolvemos!
+                                    res.json(dto);
+                                });
+                            });
+
+                        });
                     }
                 });
 
