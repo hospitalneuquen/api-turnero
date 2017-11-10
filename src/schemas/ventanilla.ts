@@ -8,15 +8,24 @@ export let ventanillaSchema = new mongoose.Schema({
     // ultimoComun: Number,
     // ultimoPrioridad: Number,
     ultimo: {
-        numero: Number,
-        tipo: String,
-        letra: String,
-        color: String
+        prioritario : {
+            tipo: String,
+            numero: Number,
+            letra: String,
+            color: String,
+            llamado: Number
+        },
+        noPrioritario : {
+            tipo: String,
+            numero: Number,
+            letra: String,
+            color: String,
+            llamado: Number
+        }
     },
-    llamado: Number,
     atendiendo: {
         type: String,
-        enum: ['prioritario', 'no-prioritario']
+        enum: ['prioritario', 'noPrioritario']
     },
     disponible: Boolean,
     pausa: Boolean

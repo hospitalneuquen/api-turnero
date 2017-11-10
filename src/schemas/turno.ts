@@ -5,7 +5,7 @@ import * as mongoose from 'mongoose';
 export let turnoSchema = new mongoose.Schema({
     tipo: {
         type: String,
-        enum: ['prioritario', 'no-prioritario']
+        enum: ['prioritario', 'noPrioritario']
     },
     numeroInicio: {
         type: Number,

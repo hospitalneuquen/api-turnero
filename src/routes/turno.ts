@@ -177,7 +177,6 @@ router.post('/turnero', (req, res, next) => {
             return next(err);
         }
 
-        debugger;
         if (exists.length > 0) {
             console.log('Ya existe el turno de este tipo y con esa letra y numeración');
             res.status(500).send({ status: 500, message: 'Ya existe el turno de este tipo y con esa letra y numeración', type: 'internal' });
