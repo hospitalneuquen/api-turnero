@@ -19,9 +19,9 @@ router.get('/turnero/:id?', (req, res, next) => {
         query = { _id: req.params.id };
     } else {
         query = {
-            ...(req.query.tipo) && {'tipo': req.query.tipo},
+            ...(req.query.tipo) && { 'tipo': req.query.tipo },
             // ...(req.query.noFinalizados) && {'$where' : 'this.ultimoNumero < this.numeroFin'}
-            ...(req.query.estado) && {'estado': req.query.estado}
+            ...(req.query.estado) && { 'estado': req.query.estado }
         }
 
     }
@@ -42,21 +42,21 @@ router.post('/turnero', (req, res, next) => {
     //let letraInicio = '', letraFin = '';
 
     let turno: any = new Turno(req.body);
-    
+
     turno.estado = (turno.estado) ? turno.estado : 'activo';
 
     turno.numeroInicio = parseInt(turno.numeroInicio);
     turno.numeroFin = parseInt(turno.numeroFin);
 
     if (turno.numeroInicio < 0) {
-        res.status(500).send({status:500, message: 'El número de inicio debe ser mayor que 0 (cero)', type:'internal'});
+        res.status(500).send({ status: 500, message: 'El número de inicio debe ser mayor que 0 (cero)', type: 'internal' });
         return next();
         //return next(new Error('El número de inicio debe ser mayor que 0 (cero)'));
 
     }
 
     if (turno.numeroFin < 0) {
-        res.status(500).send({status:500, message: 'El número final debe ser mayor que 0 (cero)', type:'internal'});
+        res.status(500).send({ status: 500, message: 'El número final debe ser mayor que 0 (cero)', type: 'internal' });
         return next();
         //return next(new Error(El número final debe ser mayor que 0 (cero)'));
     }
@@ -99,36 +99,70 @@ router.post('/turnero', (req, res, next) => {
 
     /** COMIENZO DEL CALLBACK HELL :D :D :D */
     const conditions = {
-        tipo: turno.prioridad, 
+        tipo: turno.tipo,
         estado: 'activo',
-        letraInicio: turno.letra, 
+        letraInicio: turno.letraInicio,
         //{$and: [{numeroInicio: {$lte: 1}, numeroInicio: {$lte: 4}}, {numeroFin: {$lte: 1}, numeroFin: {$gte: 4} }]} // working on robomongo
         $and: [
+            //
             {
-                numeroInicio: {$lte: turno.numeroInicio}, 
+                $or: [{
+                    numeroInicio: { $lte: turno.numeroFin },
+                }]
+            }, // OK!
+
+            {
+                $or: [{
+                    numeroFin: { $gte: turno.numeroInicio }
+                }, ]
             },
             {
-                numeroInicio: {$lte: turno.numeroFin }
+                $or: [{
+                        numeroInicio: { $lte: turno.numeroInicio },
+                    },
+                    {
+                        numeroInicio: { $lte: turno.numeroFin }
+                    },
+                    {
+                        numeroFin: { $gte: turno.numeroInicio },
+                    },
+                    {
+                        numeroFin: { $gte: turno.numeroFin }
+                    }
+                ]
             },
-            {
-                numeroFin: { $lte: turno.numeroInicio },
-            },
-            {
-                numeroFin: { $gte: turno.numeroFin } 
-            }
+
+
+
+
+
 
             // {
-            //     numeroInicio: {$lte: turno.numeroInicio}, numeroFin: {$lte: turno.numeroFin }
+            //     $and: [
+            //         {
+            //             numeroInicio: { $lte: turno.numeroInicio },
+            //         },
+            //         {
+            //             numeroInicio: { $lte: turno.numeroFin }
+            //         },
+            //         {
+            //             numeroFin: { $gte: turno.numeroInicio },
+            //         },
+            //         {
+            //             numeroFin: { $gte: turno.numeroFin }
+            //         }
+            //     ]
             // },
             // {
-            //     numeroInicio: { $gte: turno.numeroInicio }, numeroFin: { $gte: turno.numeroFin } 
+            //     $and: [{
+            //             numeroFin: { $lt: turno.numeroInicio }
+            //         },
+            //     ]
             // }
         ]
 
-        // numeroInicio: { $gte: turno.numeroInicio, $lte: turno.numeroFin },  
-        // numeroFin: { $gte: turno.numeroInicio, $lte: turno.numeroFin}
     };
-     
+
     // db.getCollection('turnos').find({$and : [ {numeroInicio: {$gte: 1, $lte: 4}, numeroFin: { $gte: 1, $lte: 4} } ] });
 
     // db.getCollection('turnos').find({$and : [
@@ -136,17 +170,17 @@ router.post('/turnero', (req, res, next) => {
     //     { $or : [ {numeroFin: { $gte: 1, $lte: 4} } ] }
     // ] });
 
-    
+
 
     Turno.find(conditions, (err, exists) => {
         if (err) {
             return next(err);
         }
-        
+
         debugger;
         if (exists.length > 0) {
             console.log('Ya existe el turno de este tipo y con esa letra y numeración');
-            res.status(500).send({status:500, message: 'Ya existe el turno de este tipo y con esa letra y numeración', type:'internal'});
+            res.status(500).send({ status: 500, message: 'Ya existe el turno de este tipo y con esa letra y numeración', type: 'internal' });
             return next();
         }
 
@@ -160,7 +194,7 @@ router.post('/turnero', (req, res, next) => {
         });
     });
 
-    
+
 });
 
 router.put('/turnero/:id', (req, res, next) => {
