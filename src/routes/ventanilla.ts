@@ -70,14 +70,14 @@ router.post('/ventanillas', function (req, res, next) {
             tipo: null,
             letra: null,
             color: null,
-            llamado: 0
+            llamado: 1
         },
         noPrioritario: {
             numero: 0,
             tipo: null,
             letra: null,
             color: null,
-            llamado: 0
+            llamado: 1
         }
     };
 
@@ -226,7 +226,7 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                         });
                     } else {
 
-                        Turno.findOne({ 'estado': 'activo' }, (errNuevo, turneroNuevo: any) => {
+                        Turno.findOne({ 'estado': 'activo', tipo: req.body.tipo }, (errNuevo, turneroNuevo: any) => {
                             debugger;
                             if (errNuevo) {
                                 return next(errNuevo);
@@ -243,6 +243,11 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                             }
 
                             turneroNuevo.set('ultimoNumero', turneroNuevo.get('ultimoNumero') + 1);
+
+                            // si son iguales y aun esta activo, entonces finalizamos el turno
+                            if (turneroNuevo.ultimoNumero === turneroNuevo.numeroFin && turneroNuevo.estado === 'activo') {
+                                turneroNuevo.set('estado', 'finalizado');
+                            }
 
                             turneroNuevo.save((errNuevo, turneroNuevoSave: any) => {
 
@@ -328,6 +333,7 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
 
             });
             break;
+            */
         default:
 
             Ventanilla.findById(req.params.id, (err, data) => {
@@ -361,7 +367,6 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                 });
             });
             break;
-        */
     }
 
 
