@@ -7,7 +7,7 @@ import * as mongoose from 'mongoose';
 
 // import * as utils from '../../../utils/utils';
 // import { defaultLimit, maxLimit } from './../../../config';
-const LETRAS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+var ObjectID = require('mongodb').ObjectID;
 
 let router = express.Router();
 // let cache = redisCache(null);
@@ -26,7 +26,7 @@ router.get('/turnero/:id?', (req, res, next) => {
 
     }
 
-    Turno.find(query, (err, data) => {
+    Turno.find(query, {}, { createdAt: 1 }, (err, data) => {
         if (err) {
             return next(err);
         }
@@ -35,48 +35,37 @@ router.get('/turnero/:id?', (req, res, next) => {
     });
 });
 
-
-
 router.post('/turnero', (req, res, next) => {
-    let letras = [];
-    //let letraInicio = '', letraFin = '';
-
     let turno: any = new Turno(req.body);
 
     turno.estado = (turno.estado) ? turno.estado : 'activo';
 
     turno.numeroInicio = parseInt(turno.numeroInicio);
     turno.numeroFin = parseInt(turno.numeroFin);
-
-    if (turno.numeroInicio < 0) {
-        res.status(500).send({ status: 500, message: 'El número de inicio debe ser mayor que 0 (cero)', type: 'internal' });
-        return next();
-        //return next(new Error('El número de inicio debe ser mayor que 0 (cero)'));
-
-    }
-
-    if (turno.numeroFin < 0) {
-        res.status(500).send({ status: 500, message: 'El número final debe ser mayor que 0 (cero)', type: 'internal' });
-        return next();
-        //return next(new Error(El número final debe ser mayor que 0 (cero)'));
-    }
-
     // to lower
     if (req.body.letraInicio) {
         turno.letraInicio = req.body.letraInicio.toLowerCase();
     }
-
-    /*
-    if (req.body.letraFin) {
-        turno.letraFin = req.body.letraFin.toLowerCase();
-    }
-    */
 
     // si no se le ha pasado el ultimo numero, lo inicializamos en -1 
     // y de esta forma sabemos que aun no ha comenzado
     if (!turno.ultimoNumero) {
         turno.ultimoNumero = turno.numeroInicio - 1;
     }
+    /*
+    if (req.body.letraFin) {
+        turno.letraFin = req.body.letraFin.toLowerCase();
+    }
+    */
+
+    // validaciones
+    /*
+    const validar = this.validar(turno);
+    if (!validar.valid) {
+        return res.status(500).send({ status: 500, message: validar.message, type: 'internal' });
+    }
+    */
+
 
     // filtramos las letras que vamos  utilizar
     /*
@@ -98,7 +87,8 @@ router.post('/turnero', (req, res, next) => {
     */
 
     /** COMIENZO DEL CALLBACK HELL :D :D :D */
-    const conditions = {
+    let conditions = {
+        ...(req.params.id) && { _id: { $ne: new ObjectID(req.params.id) } },
         tipo: turno.tipo,
         estado: 'activo',
         letraInicio: turno.letraInicio,
@@ -114,63 +104,28 @@ router.post('/turnero', (req, res, next) => {
             {
                 $or: [{
                     numeroFin: { $gte: turno.numeroInicio }
-                }, ]
+                },]
             },
             {
                 $or: [{
-                        numeroInicio: { $lte: turno.numeroInicio },
-                    },
-                    {
-                        numeroInicio: { $lte: turno.numeroFin }
-                    },
-                    {
-                        numeroFin: { $gte: turno.numeroInicio },
-                    },
-                    {
-                        numeroFin: { $gte: turno.numeroFin }
-                    }
+                    numeroInicio: { $lte: turno.numeroInicio },
+                },
+                {
+                    numeroInicio: { $lte: turno.numeroFin }
+                },
+                {
+                    numeroFin: { $gte: turno.numeroInicio },
+                },
+                {
+                    numeroFin: { $gte: turno.numeroFin }
+                }
                 ]
-            },
-
-
-
-
-
-
-            // {
-            //     $and: [
-            //         {
-            //             numeroInicio: { $lte: turno.numeroInicio },
-            //         },
-            //         {
-            //             numeroInicio: { $lte: turno.numeroFin }
-            //         },
-            //         {
-            //             numeroFin: { $gte: turno.numeroInicio },
-            //         },
-            //         {
-            //             numeroFin: { $gte: turno.numeroFin }
-            //         }
-            //     ]
-            // },
-            // {
-            //     $and: [{
-            //             numeroFin: { $lt: turno.numeroInicio }
-            //         },
-            //     ]
-            // }
+            }
         ]
-
     };
 
-    // db.getCollection('turnos').find({$and : [ {numeroInicio: {$gte: 1, $lte: 4}, numeroFin: { $gte: 1, $lte: 4} } ] });
 
-    // db.getCollection('turnos').find({$and : [
-    //     { $or : [ {numeroInicio: {$gte: 1, $lte: 4} } ] },
-    //     { $or : [ {numeroFin: { $gte: 1, $lte: 4} } ] }
-    // ] });
-
-
+    // fin validaciones
 
     Turno.find(conditions, (err, exists) => {
         if (err) {
@@ -179,10 +134,9 @@ router.post('/turnero', (req, res, next) => {
 
         if (exists.length > 0) {
             console.log('Ya existe el turno de este tipo y con esa letra y numeración');
-            res.status(500).send({ status: 500, message: 'Ya existe el turno de este tipo y con esa letra y numeración', type: 'internal' });
-            return next();
+            return res.status(500).send({ status: 500, message: 'Ya existe el turno de este tipo y con esa letra y numeración', type: 'internal' });
+            //return next();
         }
-
 
         turno.save((err, data) => {
             if (err) {
@@ -191,22 +145,93 @@ router.post('/turnero', (req, res, next) => {
 
             res.json(data);
         });
+
     });
-
-
 });
 
-router.put('/turnero/:id', (req, res, next) => {
 
-    let turno = new Turno(req.body);
+router.put('/turnero/:id', (req, res, next) => {
+    let turno: any = new Turno(req.body);
+
+    turno.estado = (turno.estado) ? turno.estado : 'activo';
+
+    turno.numeroInicio = parseInt(turno.numeroInicio);
+    turno.numeroFin = parseInt(turno.numeroFin);
+    // to lower
+    if (req.body.letraInicio) {
+        turno.letraInicio = req.body.letraInicio.toLowerCase();
+    }
+
+    // si no se le ha pasado el ultimo numero, lo inicializamos en -1 
+    // y de esta forma sabemos que aun no ha comenzado
+    turno.ultimoNumero = turno.numeroInicio - 1;
+
+    /*
+    if (req.body.letraFin) {
+        turno.letraFin = req.body.letraFin.toLowerCase();
+    }
+    */
+
     turno.isNew = false;
 
-    turno.save((err, data) => {
+    let conditions = {
+        ...(req.params.id) && { _id: { $ne: new ObjectID(req.params.id) } },
+        tipo: turno.tipo,
+        estado: 'activo',
+        letraInicio: turno.letraInicio,
+        //{$and: [{numeroInicio: {$lte: 1}, numeroInicio: {$lte: 4}}, {numeroFin: {$lte: 1}, numeroFin: {$gte: 4} }]} // working on robomongo
+        $and: [
+            //
+            {
+                $or: [{
+                    numeroInicio: { $lte: turno.numeroFin },
+                }]
+            }, // OK!
+
+            {
+                $or: [{
+                    numeroFin: { $gte: turno.numeroInicio }
+                },]
+            },
+            {
+                $or: [{
+                    numeroInicio: { $lte: turno.numeroInicio },
+                },
+                {
+                    numeroInicio: { $lte: turno.numeroFin }
+                },
+                {
+                    numeroFin: { $gte: turno.numeroInicio },
+                },
+                {
+                    numeroFin: { $gte: turno.numeroFin }
+                }
+                ]
+            }
+        ]
+    };
+
+
+    // fin validaciones
+
+    Turno.find(conditions, (err, exists) => {
         if (err) {
             return next(err);
         }
 
-        res.json(data);
+        if (exists.length > 0) {
+            console.log('Ya existe el turno de este tipo y con esa letra y numeración');
+            return res.status(500).send({ status: 500, message: 'Ya existe el turno de este tipo y con esa letra y numeración', type: 'internal' });
+            //return next();
+        }
+
+        turno.save((err, data) => {
+            if (err) {
+                return next(err);
+            }
+
+            res.json(data);
+        });
     });
 });
 

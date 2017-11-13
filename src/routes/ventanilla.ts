@@ -119,24 +119,31 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
 
     switch (req.body.accion) {
         case 'rellamar':
-            Ventanilla.findById(req.params.id, (err, data) => {
+            Ventanilla.findById(req.params.id, (err, data: any) => {
 
                 data.isNew = false;
-                data.set('llamado', data.get('llamado') + 1);
+
+                var tipo = (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario';
+                data.ultimo[tipo].llamado = parseInt(data.ultimo[tipo].llamado)+1;
 
                 data.save((err, data2) => {
                     if (err) {
                         return next(err);
                     }
 
-                    cambio.timestamp = (new Date().getMilliseconds());
-                    cambio.type = 'default';
-                    cambio.idVentanilla = data2._id;
-                    cambio.ventanilla = data2;
+                    Turno.findById(req.body.idTurno, (errT, turno: any) => {
+                        if (errT) {
+                            return next(errT);
+                        }
 
+                        cambio.timestamp = (new Date().getMilliseconds());
+                        cambio.type = 'default';
+                        cambio.idVentanilla = data2._id;
+                        cambio.ventanilla = data2;
+                        cambio.turno = turno;
 
-                    res.json(data2);
-
+                        res.json(data2);
+                    });
                 });
             });
             break;
@@ -172,23 +179,17 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                             ventanilla.isNew = false;
                             ventanilla.set('llamado', 1);
 
-                            // const ultimo = {
-                            //     numero: turno.ultimoNumero,
-                            //     tipo: (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario',
-                            //     letra: turno.letraInicio,
-                            //     color: turno.color
-                            // };
                             var tipo = (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario';
                             let ultimo: any = {};
                             ultimo[tipo] = {
                                 numero: turno.ultimoNumero,
                                 tipo: (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario',
                                 letra: turno.letraInicio,
-                                color: turno.color
+                                color: turno.color,
+                                llamado: 1
                             }
 
                             // seteamos el ultimo turno llamado desde la ventanilla
-                            // ventanilla.set('ultimo', ultimo);
                             ventanilla.ultimo[tipo] = ultimo[tipo]
 
                             // indicamos que tipo de turno esta atendiendo
@@ -251,7 +252,8 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                                     numero: turneroNuevoSave.ultimoNumero,
                                     tipo: (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario',
                                     letra: turneroNuevoSave.letraInicio,
-                                    color: turneroNuevoSave.color
+                                    color: turneroNuevoSave.color,
+                                    llamado: 1
                                 }
 
                                 // seteamos el ultimo turno llamado desde la ventanilla
@@ -288,6 +290,7 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
 
             });
             break;
+        /*
         case 'cambiar_turno':
 
             // ventanilla hace click en btn siguiente
@@ -298,13 +301,7 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
 
                 ventanilla.isNew = false;
 
-                /*
-                if (req.body.tipo === 'prioritario') {
-                    ventanilla.set('ultimoPrioridad', 0);
-                } else if (req.body.tipo === 'noPrioritario') {
-                    ventanilla.set('ultimoComun', 0);                   
-                }
-                */
+               
 
                 ventanilla.set('llamado', 1);
 
@@ -364,6 +361,7 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                 });
             });
             break;
+        */
     }
 
 
