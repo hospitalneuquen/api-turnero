@@ -21,12 +21,13 @@ router.get('/turnero/:id?', (req, res, next) => {
         query = {
             ...(req.query.tipo) && { 'tipo': req.query.tipo },
             // ...(req.query.noFinalizados) && {'$where' : 'this.ultimoNumero < this.numeroFin'}
-            ...(req.query.estado) && { 'estado': req.query.estado }
+            ...(req.query.estado) && { 'estado': req.query.estado },
+            estado: {$ne: 'finalizado'}
         }
 
     }
 
-    Turno.find(query, {}, { createdAt: 1 }, (err, data) => {
+    Turno.find(query, {}, { createdAt: -1 }, (err, data) => {
         if (err) {
             return next(err);
         }
