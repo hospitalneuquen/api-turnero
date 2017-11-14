@@ -45,3 +45,5 @@ Thumbs.db
 
 .tscache
 .tscache/*
+
+/src/config.ts

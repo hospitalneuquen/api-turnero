@@ -1,0 +1,4 @@
+
+export const db = 'mongodb://put.your.path.here/put.your.database.here';
+
+export const debugMode = true;

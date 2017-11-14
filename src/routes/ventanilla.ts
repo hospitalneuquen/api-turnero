@@ -126,15 +126,18 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                 var tipo = (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario';
                 data.ultimo[tipo].llamado = parseInt(data.ultimo[tipo].llamado)+1;
 
-                data.save((err, data2) => {
-                    if (err) {
-                        return next(err);
+                Turno.findById(req.body.idTurno, (errT, turno: any) => {
+                    if (errT) {
+                        return next(errT);
                     }
 
-                    Turno.findById(req.body.idTurno, (errT, turno: any) => {
-                        if (errT) {
-                            return next(errT);
+                    data.atendiendo = turno.tipo;
+
+                    data.save((err, data2) => {
+                        if (err) {
+                            return next(err);
                         }
+
 
                         cambio.timestamp = (new Date().getMilliseconds());
                         cambio.type = 'default';
