@@ -134,9 +134,8 @@ router.post('/turnero', (req, res, next) => {
         }
 
         if (exists.length > 0) {
-            console.log('Ya existe el turno de este tipo y con esa letra y numeración');
-            return res.status(500).send({ status: 500, message: 'Ya existe el turno de este tipo y con esa letra y numeración', type: 'internal' });
-            //return next();
+            //return res.status(500).send({ error: 'Ya existe el turno de este tipo y con esa letra y numeración' });
+            return next(new Error('Ya existe el turno de este tipo y con esa letra y numeración'));
         }
 
         turno.save((err, data) => {
@@ -221,9 +220,8 @@ router.put('/turnero/:id', (req, res, next) => {
         }
 
         if (exists.length > 0) {
-            console.log('Ya existe el turno de este tipo y con esa letra y numeración');
-            return res.status(500).send({ status: 500, message: 'Ya existe el turno de este tipo y con esa letra y numeración', type: 'internal' });
-            //return next();
+            //return res.status(500).send({ error: 'Ya existe el turno de este tipo y con esa letra y numeración' });
+            return next(new Error('Ya existe el turno de este tipo y con esa letra y numeración'));
         }
 
         turno.save((err, data) => {

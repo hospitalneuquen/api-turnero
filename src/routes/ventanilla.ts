@@ -219,8 +219,6 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                                 cambio.ventanilla = data2;
                                 cambio.turno = turnero;
 
-                                console.log(dto);
-
                                 // devolvemos!
                                 res.json(dto);
 
@@ -286,7 +284,6 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
                                     cambio.ventanilla = data3;
                                     cambio.turno = turneroNuevo;
 
-                                    console.log(cambio);
                                     // devolvemos!
                                     res.json(dto);
                                 });
@@ -298,45 +295,6 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
 
             });
             break;
-        /*
-        case 'cambiar_turno':
-
-            // ventanilla hace click en btn siguiente
-            Ventanilla.findById(req.params.id, (err, ventanilla) => {
-                if (err) {
-                    return next(err);
-                }
-
-                ventanilla.isNew = false;
-
-               
-
-                ventanilla.set('llamado', 1);
-
-                // si esta finalizado el turnero, buscamos el proximo en estado activo
-                Turno.findOne({ 'estado': 'activo' }, (err, turnero) => {
-                    if (err) {
-                        return next(err);
-                    }
-
-                    let dto = {
-                        ventanilla: ventanilla,
-                        turno: turnero
-                    };
-
-                    // seteamos la variable de cambio para enviar el SSE
-                    cambio.timestamp = (new Date().getMilliseconds());
-                    cambio.type = 'default';
-                    cambio.idVentanilla = ventanilla._id;
-                    cambio.ventanilla = ventanilla;
-                    cambio.turno = turnero;
-
-                    res.json(dto);
-                });
-
-            });
-            break;
-            */
         default:
 
             Ventanilla.findById(req.params.id, (err, data) => {

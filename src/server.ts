@@ -57,6 +57,9 @@ export class Server {
 
         //configure routes
         this.routes();
+
+        // middleware errores
+        this.error();
     }
 
     /**
@@ -87,48 +90,7 @@ export class Server {
 
         //mount override
         this.app.use(methodOverride());
-
-        //error handling
-        this.app.use(errorHandler());
-        /*
-        // Error handler
-        this.app.use(function (err: any, req, res, next) {
-            console.log(err);
-            console.log("ENTRAMOS HAY ERROR");
-            if (err) {
-                console.log("HAY ERROR");
-                
-                // // Parse err
-                // let _error: Error;
-                // if (!isNaN(err)) {
-                //     _error = new Error(HttpStatus.getStatusText(err));
-                //     (_error as any).status = err;
-                // } else {
-                //     if (typeof err === 'string') {
-                //         _error = new Error(err);
-                //         (_error as any).status = 400;
-
-                //     } else {
-                //         err.status = 500;
-                //     }
-                // }
-
-                // err = _error;
-                
-                // IMPORTANTE: Express app.get('env') returns 'development' if NODE_ENV is not defined.
-                // O sea, la API está corriendo siempre en modo development
-
-                // Send response
-                res.status(err.status);
-                res.send({
-                    message: err.message,
-                    error: (this.app.get('env') === 'development') ? err : null
-                });
-            }
-        });
-        */
-
-
+    
         this.app.all('*', function (req, res, next) {
             res.header('Access-Control-Allow-Origin', '*');
             res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
@@ -143,14 +105,6 @@ export class Server {
             }
         });
 
-
-
-        // // catch 404 and forward to error handler
-        // this.app.use(function (err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
-        //   var error = new Error("Not Found");
-        //   err.status = 404;
-        //   next(err);
-        // });
     }
 
     /**
@@ -185,22 +139,47 @@ export class Server {
         let router: express.Router;
         router = express.Router();
 
-        //create routes
-        // var index: indexRoute.Index = new indexRoute.Index();
-
-        //home page
-        // router.get("/", index.index.bind(index.index));
-        // router.get("/",  function (req, res, next) {
-        //   res.send("Hello");
-        // });
 
         let routes = requireDir('./routes/');
         for (var route in routes) {
             this.app.use('/api', routes[route]);
         }
-        //console.log(routes);
+
         //use router middleware
         this.app.use(router);
+    }
+
+    public error() {
+        // catch 404 and forward to error handler
+        this.app.use(function (req, res, next) {
+            let err: any = new Error('Not Found');
+            err.status = 404;
+            next(err);
+        });
+
+        // Error handler
+        this.app.use(function (err: any, req, res, next) {
+            if (err) {
+                //console.log(this.app.get('env'));
+                // IMPORTANTE: Express app.get('env') returns 'development' if NODE_ENV is not defined.
+                // O sea, la API está corriendo siempre en modo development
+
+                // Send response
+                res.status(err.status || 500);
+
+                res.send({
+                    message: err.message,
+                    //error: (this.app.get('env') === 'development') ? err : null
+                    error: err
+                });
+
+                //next(err);
+            }
+        });
+
+
+        //error handling
+        this.app.use(errorHandler());
     }
 }
 
