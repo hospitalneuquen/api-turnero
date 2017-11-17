@@ -9,6 +9,7 @@ import * as errorHandler from 'errorhandler';
 import * as methodOverride from 'method-override';
 import * as requireDir from 'require-dir';
 
+var helmet = require('helmet');
 
 
 // import * as sseExpress from 'sse-express';
@@ -105,6 +106,10 @@ export class Server {
             }
         });
 
+        // security
+        this.app.use(helmet());
+
+        this.app.disable('x-powered-by');
     }
 
     /**
