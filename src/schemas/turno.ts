@@ -8,22 +8,79 @@ export let turnoSchema = new mongoose.Schema({
         type: String,
         enum: ['prioritario', 'noPrioritario']
     },
+
     numeroInicio: {
         type: Number,
-        default: 0
+        default: 0,
+        validate: {
+            // agregamos la validacion de un solo caracter
+            validator: function(v) {
+              return /\d{1}/.test(v);
+            },
+            message: '{VALUE} no es un valor válido, ingrese un número.'
+          },
+        required: [true, 'El número de inicio es requerido']
     },
+
     numeroFin: {
         type: Number,
-        default: 99
+        default: 99,
+        validate: {
+            // agregamos la validacion de un solo caracter
+            validator: function(v) {
+              return /\d{1}/.test(v);
+            },
+            message: '{VALUE} no es un valor válido, ingrese un número.'
+          },
+        required: [true, 'El número de fin es requerido']
     },
-    letraInicio: String,
-    letraFin: String,
+
+    letraInicio: {
+        type: String,
+        validate: {
+            // agregamos la validacion de un solo caracter
+            validator: function(v) {
+              return /^[a-zA-Z]*$/.test(v);
+              
+            },
+            message: '{VALUE} no es un valor válido, ingrese una letra.'
+          },
+        required: [true, 'La letra de inicio es requerido']
+    },
+
+    letraFin: {
+        type: String,
+        validate: {
+            // agregamos la validacion de un solo caracter
+            validator: function(v) {
+              return /^[a-zA-Z]*$/.test(v);
+              
+            },
+            message: '{VALUE} no es un valor válido, ingrese una letra.'
+          },
+
+    },
+
     color: String,
-    ultimoNumero: Number,
+
+    ultimoNumero: {
+        type: Number,
+        default: 0,
+        validate: {
+            // agregamos la validacion de un solo caracter
+            validator: function(v) {
+              return /\d{1}/.test(v);
+            },
+            message: '{VALUE} no es un valor válido, ingrese un número.'
+        }
+    },
+
     estado: {
         type: String,
-        enum: ['activo', 'finalizado']
+        enum: ['activo', 'finalizado'],
+        default: 'activo'
     },
+
     createdAt: {
         type: Date,
         default: new Date()

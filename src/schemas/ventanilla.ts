@@ -4,7 +4,17 @@ import * as mongoose from 'mongoose';
 // let updateEmitter = new EventEmitter();
 
 export let ventanillaSchema = new mongoose.Schema({
-    numeroVentanilla: Number,
+    numeroVentanilla: {
+        type: Number,
+        validate: {
+            // agregamos la validacion de un solo caracter
+            validator: function(v) {
+              return /\d{1}/.test(v);
+            },
+            message: '{VALUE} no es un valor válido, ingrese un número.'
+          },
+        required: [true, 'El número de ventanilla es requerido']
+    },
     // ultimoComun: Number,
     // ultimoPrioridad: Number,
     ultimo: {
