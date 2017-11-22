@@ -10,7 +10,7 @@ let router = express.Router();
 // Variable global para anunciar cambios desde el servidor
 // Se puede setear dentro de cualquier ruta para anunciar cambios servidor ==> cliente
 
-let cambio: any = { timestamp: new Date().getMilliseconds(), type: 'default', idVentanilla: null, ventanilla: {}, turno: {} };
+let cambio: any = { timestamp: new Date().getMilliseconds(), type: 'default', ventanilla: {}, turno: {} };
 
 // SSE
 router.get('/update', (req, res, next) => {
@@ -153,7 +153,7 @@ router.patch('/ventanillas/:id*?', async function (req, res, next) {
                 }
 
                 // enviamos cambio SSE
-                cambio = {timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: data._id, ventanilla: data, turno: turno};
+                cambio = {timestamp: (new Date().getMilliseconds()), type: 'default', ventanilla: data, turno: turno};
 
                 res.json(data);
             });
@@ -174,7 +174,7 @@ router.patch('/ventanillas/:id*?', async function (req, res, next) {
                     if (!proximoTurno.turno) {
                         // seteamos la variable de cambio para enviar el SSE
                         cambio = {
-                            timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: ventanilla._id, ventanilla: ventanilla, turno: null
+                            timestamp: (new Date().getMilliseconds()), type: 'default', ventanilla: ventanilla, turno: null
                         };
 
                         ventanilla.turno = null;
@@ -192,7 +192,7 @@ router.patch('/ventanillas/:id*?', async function (req, res, next) {
 
                     // seteamos la variable de cambio para enviar el SSE
                     cambio = {
-                        timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: ventanilla._id, ventanilla: ventanilla, turno: proximoTurno
+                        timestamp: (new Date().getMilliseconds()), type: 'default', ventanilla: ventanilla, turno: proximoTurno
                     };
 
                     // devolvemos!
@@ -254,7 +254,7 @@ router.patch('/ventanillas/:id*?', async function (req, res, next) {
 
                         // seteamos la variable de cambio para enviar el SSE
                         cambio = {
-                            timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: data2._id, ventanilla: data2, turno: turnero
+                            timestamp: (new Date().getMilliseconds()), type: 'default', ventanilla: data2, turno: turnero
                         }
 
                         // devolvemos!
@@ -298,7 +298,6 @@ router.patch('/ventanillas/:id*?', async function (req, res, next) {
                     }
 
                     cambio.timestamp = (new Date().getMilliseconds());
-                    cambio.idVentanilla = data._id;
                     cambio.ventanilla = data;
 
                     return res.json(data);
@@ -347,7 +346,7 @@ async function getProximoTurno(ventanilla, tipoTurno) {
             // no hay proximo turno, devolvemos la ventanilla con el turno nulleado
             if (!turneroNuevo) {
                 // seteamos la variable de cambio para enviar el SSE
-                cambio = {timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: ventanilla._id, ventanilla: ventanilla, turno: null};
+                cambio = {timestamp: (new Date().getMilliseconds()), type: 'default', ventanilla: ventanilla, turno: null};
     
                 return resolve(ventanilla);
             }
@@ -387,7 +386,7 @@ async function getProximoTurno(ventanilla, tipoTurno) {
                     };
     
                     // seteamos la variable de cambio para enviar el SSE
-                    cambio = {timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: data3._id, ventanilla: data3, turno: turneroNuevo};
+                    cambio = {timestamp: (new Date().getMilliseconds()), type: 'default', ventanilla: data3, turno: turneroNuevo};
     
                     // devolvemos!
                     return resolve(dto);
