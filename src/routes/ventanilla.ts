@@ -163,7 +163,7 @@ router.patch('/ventanillas/:id*?', async function (req, res, next) {
             // let turnoSiguiente: any = await Turno.findById(req.body.idTurno);
         
             // if (!turnoSiguiente) {
-            if (!turno) {
+            if (!turno || (turno && turno.estado === 'finalizado')) {
                 //return res.status(404).send('Turno no encontrado');
                 // si el turno actual ya esta agotado, llamamos al siguiente
                 try {
