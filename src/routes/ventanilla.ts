@@ -1,8 +1,8 @@
-import { Turno } from './../schemas/turno';
 import * as express from 'express';
-import { Ventanilla } from '../schemas/ventanilla';
 import * as mongoose from 'mongoose';
-import * as redisCache from 'express-redis-cache';
+
+import { Ventanilla } from '../schemas/ventanilla';
+import { Turno } from './../schemas/turno';
 
 let router = express.Router();
 // let cache = redisCache();
@@ -31,61 +31,66 @@ router.get('/update', (req, res, next) => {
 });
 
 // Get 1
-router.get('/ventanillas/:id*?', function (req, res, next) {
-    if (req.params.id) {
-        Ventanilla.findById(req.params.id, function (err, data) {
-            if (err) {
-                return next(err);
-            }
-            res.json(data);
-        });
-    } else {
+router.get('/ventanillas/:id', function (req, res, next) {
 
-        let query = {};
-        query = {
-            ...(req.query.numeroVentanilla) && { 'numeroVentanilla': req.query.numeroVentanilla },
-            ...(req.query.tipo) && { 'tipo': req.query.tipo }
+    // verificamos que sea un ObjectId válido
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(404).send('Ventanilla no encontrada');
+    }
+
+    Ventanilla.findOne({_id: req.params.id}, (err, data) => {
+        if (err) {
+            return next(err);
         }
 
-        Ventanilla.find(query, (err, data) => {
-            if (err) {
-                return next(err);
-            }
+        if (!data) {
+            return res.status(404).send('Ventanilla no encontrada');
+        }
 
-            res.json(data);
-        });
+        res.json(data);
+    });
+
+});
+
+
+router.get('/ventanillas', function (req, res, next) {
+    let query = {
+        ...(req.query.numeroVentanilla) && { 'numeroVentanilla': req.query.numeroVentanilla },
+        ...(req.query.tipo) && { 'tipo': req.query.tipo }
     }
+
+    Ventanilla.find(query, (err, data) => {
+        if (err) {
+            return next(err);
+        }
+
+        res.json(data);
+    });
 });
 
 // Insert
 router.post('/ventanillas', function (req, res, next) {
 
-    let insertVentanilla: any = new Ventanilla(req.body);
+    let ventanilla: any = new Ventanilla(req.body);
 
-    //insertVentanilla.ultimoComun = (insertVentanilla.ultimoComun) ? insertVentanilla.ultimoComun : 0;
-    //insertVentanilla.ultimoPrioridad = (insertVentanilla.ultimoPrioridad) ? insertVentanilla.ultimoPrioridad : 0;
-    insertVentanilla.ultimo = {
-        prioritario: {
-            numero: 0,
-            tipo: null,
-            letra: null,
-            color: null,
-            llamado: 1
-        },
-        noPrioritario: {
-            numero: 0,
-            tipo: null,
-            letra: null,
-            color: null,
-            llamado: 1
-        }
+    const props = {
+        numero: 0,
+        tipo: null,
+        letra: null,
+        color: null,
+        llamado: 1
     };
 
-    insertVentanilla.save((err) => {
+    ventanilla.ultimo = {
+        prioritario: props,
+        noPrioritario: props
+    };
+
+    ventanilla.save((err) => {
         if (err) {
             return next(err);
         }
-        return res.json(insertVentanilla);
+        return res.json(ventanilla);
     });
 });
 
@@ -93,207 +98,183 @@ router.post('/ventanillas', function (req, res, next) {
 router.put('/ventanillas/:id', function (req, res, next) {
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-        return next('ObjectID Inválido');
+        return res.status(404).send('Ventanilla no encontrada');
     }
 
-    let updateVentanilla = new Ventanilla(req.body);
+    let ventanilla = new Ventanilla(req.body);
 
-    updateVentanilla.isNew = false;
+    ventanilla.isNew = false;
 
-    updateVentanilla.save((errOnPut) => {
+    ventanilla.save((errOnPut) => {
         if (errOnPut) {
             return next(errOnPut);
         }
-        return res.json(updateVentanilla);
+        return res.json(ventanilla);
     });
 
 });
 
 // Cambios únicos del tipo { key: value }
 // return object: ventanilla & turno
-router.patch('/ventanillas/:id*?', function (req, res, next) {
+router.patch('/ventanillas/:id*?', async function (req, res, next) {
+    let ventanilla: any
+    let turno: any;
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-        return next('ObjectID Inválido');
+        return res.status(404).send('Ventanilla no encontrada');
+    }
+
+    ventanilla = await Ventanilla.findById(req.params.id);
+
+    if (!ventanilla) {
+        return res.status(404).send('Ventanilla no encontrada');
+    }
+
+    if (req.body.idTurno) {
+        // buscamos el turno actual
+        turno = await Turno.findById(req.body.idTurno);
+
+        // if (!turno) {
+        //     return res.status(404).send('Turno no encontrado');
+        // }
     }
 
     switch (req.body.accion) {
         case 'rellamar':
-            Ventanilla.findById(req.params.id, (err, data: any) => {
+            ventanilla.isNew = false;
 
-                data.isNew = false;
+            // aumentamos el ultimo llamado
+            ventanilla.ultimo[turno.tipo].llamado = parseInt(ventanilla.ultimo[turno.tipo].llamado)+1;
+            ventanilla.atendiendo = turno.tipo;
 
-                var tipo = (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario';
-                data.ultimo[tipo].llamado = parseInt(data.ultimo[tipo].llamado)+1;
-
-                Turno.findById(req.body.idTurno, (errT, turno: any) => {
-                    if (errT) {
-                        return next(errT);
-                    }
-
-                    data.atendiendo = turno.tipo;
-
-                    data.save((err, data2) => {
-                        if (err) {
-                            return next(err);
-                        }
-
-
-                        cambio.timestamp = (new Date().getMilliseconds());
-                        cambio.type = 'default';
-                        cambio.idVentanilla = data2._id;
-                        cambio.ventanilla = data2;
-                        cambio.turno = turno;
-
-                        res.json(data2);
-                    });
-                });
-            });
-            break;
-        case 'siguiente':
-
-            // ventanilla hace click en btn siguiente
-            Ventanilla.findById(req.params.id, (err, ventanilla: any) => {
+            ventanilla.save((err, data) => {
                 if (err) {
                     return next(err);
                 }
 
-                // Turnero del mismo tipo
-                Turno.findById(req.body.idTurno, (err, turno: any) => {
-                    if (err) {
-                        return next(err);
-                    }
+                // enviamos cambio SSE
+                cambio = {timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: data._id, ventanilla: data, turno: turno};
 
-                    if (turno.estado === 'activo') {
-                        turno.isNew = false;
-
-                        // si el ultimo numero llamado del turno es menor al de finalizacion, incrementamos
-                        if (turno.ultimoNumero < turno.numeroFin) {
-                            turno.set('ultimoNumero', turno.get('ultimoNumero') + 1);
-                        }
-
-                        // si son iguales y aun esta activo, entonces finalizamos el turno
-                        if (turno.ultimoNumero === turno.numeroFin && turno.estado === 'activo') {
-                            turno.set('estado', 'finalizado');
-                        }
-
-                        turno.save((err, turnero) => {
-
-                            ventanilla.isNew = false;
-                            ventanilla.set('llamado', 1);
-
-                            var tipo = (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario';
-                            let ultimo: any = {};
-                            ultimo[tipo] = {
-                                numero: turno.ultimoNumero,
-                                tipo: (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario',
-                                letra: turno.letraInicio,
-                                color: turno.color,
-                                llamado: 1
-                            }
-
-                            // seteamos el ultimo turno llamado desde la ventanilla
-                            ventanilla.ultimo[tipo] = ultimo[tipo]
-
-                            // indicamos que tipo de turno esta atendiendo
-                            ventanilla.set('atendiendo', (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario');
-
-                            // guardamos la info de la ventanilla
-                            ventanilla.save((err, data2: any) => {
-                                if (err) {
-                                    return next(err);
-                                }
-
-                                // if (turnero.estado === 'activo') {
-                                // armamos el documento a devolver, que tendra la ventanilla
-                                // y el turno en un mismo objeto
-                                let dto = {
-                                    ventanilla: data2,
-                                    turno: turno
-                                };
-
-                                // seteamos la variable de cambio para enviar el SSE
-                                cambio.timestamp = (new Date().getMilliseconds());
-                                cambio.type = 'default';
-                                cambio.idVentanilla = data2._id;
-                                cambio.ventanilla = data2;
-                                cambio.turno = turnero;
-
-                                // devolvemos!
-                                res.json(dto);
-
-                            });
-
-                        });
-                    } else {
-
-                        Turno.findOne({ 'estado': 'activo', tipo: req.body.tipo }, (errNuevo, turneroNuevo: any) => {
-                            debugger;
-                            if (errNuevo) {
-                                return next(errNuevo);
-                            }
-                            if (!turneroNuevo) {
-                                // seteamos la variable de cambio para enviar el SSE
-                                cambio.timestamp = (new Date().getMilliseconds());
-                                cambio.type = 'default';
-                                cambio.idVentanilla = ventanilla._id;
-                                cambio.ventanilla = ventanilla;
-                                cambio.turno = null;
-
-                                return res.json(cambio.ventanilla);
-                            }
-
-                            turneroNuevo.set('ultimoNumero', turneroNuevo.get('ultimoNumero') + 1);
-
-                            // si son iguales y aun esta activo, entonces finalizamos el turno
-                            if (turneroNuevo.ultimoNumero === turneroNuevo.numeroFin && turneroNuevo.estado === 'activo') {
-                                turneroNuevo.set('estado', 'finalizado');
-                            }
-
-                            turneroNuevo.save((errNuevo, turneroNuevoSave: any) => {
-
-                                var tipo = (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario';
-                                let ultimo: any = {};
-                                ultimo[tipo] = {
-                                    numero: turneroNuevoSave.ultimoNumero,
-                                    tipo: (req.body.tipo === 'prioritario') ? 'prioritario' : 'noPrioritario',
-                                    letra: turneroNuevoSave.letraInicio,
-                                    color: turneroNuevoSave.color,
-                                    llamado: 1
-                                }
-
-                                // seteamos el ultimo turno llamado desde la ventanilla
-                                ventanilla.set('ultimo', ultimo);
-
-                                ventanilla.save((err3, data3: any) => {
-                                    if (err3) {
-                                        return next(err3);
-                                    }
-
-                                    // armamos el documento a devolver, que tendra la ventanilla
-                                    // y el turno en un mismo objeto
-                                    let dto = {
-                                        ventanilla: data3,
-                                        turno: turneroNuevo
-                                    };
-
-                                    // seteamos la variable de cambio para enviar el SSE
-                                    cambio.timestamp = (new Date().getMilliseconds());
-                                    cambio.type = 'default';
-                                    cambio.idVentanilla = data3._id;
-                                    cambio.ventanilla = data3;
-                                    cambio.turno = turneroNuevo;
-
-                                    // devolvemos!
-                                    res.json(dto);
-                                });
-                            });
-
-                        });
-                    }
-                });
-
+                res.json(data);
             });
+        break;
+
+        case 'siguiente':
+            // let turnoSiguiente: any = await Turno.findById(req.body.idTurno);
+        
+            // if (!turnoSiguiente) {
+            if (!turno) {
+                //return res.status(404).send('Turno no encontrado');
+                // si el turno actual ya esta agotado, llamamos al siguiente
+                try {
+                    const proximoTurno: any = await getProximoTurno(ventanilla, req.body.tipo);
+            
+                    // si no hay proximo turno entonces devolvemos la ventanilla con el turno null
+                    // asi al usuario le aparece que ya no hay mas turnos y debe cargar nuevos
+                    if (!proximoTurno.turno) {
+                        // seteamos la variable de cambio para enviar el SSE
+                        cambio = {
+                            timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: ventanilla._id, ventanilla: ventanilla, turno: null
+                        };
+
+                        ventanilla.turno = null;
+
+                        return res.json(ventanilla);
+                    }
+
+
+                    // armamos el documento a devolver, que tendra la ventanilla
+                    // y el turno en un mismo objeto
+                    let dto = {
+                        ventanilla: ventanilla,
+                        turno: proximoTurno
+                    };
+
+                    // seteamos la variable de cambio para enviar el SSE
+                    cambio = {
+                        timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: ventanilla._id, ventanilla: ventanilla, turno: proximoTurno
+                    };
+
+                    // devolvemos!
+                    return res.json(dto);
+                 
+            
+                } catch (err) { 
+                    return next(err);
+                }
+            }
+
+            if (turno.estado === 'activo') {
+                turno.isNew = false;
+
+                // si el ultimo numero llamado del turno es menor al de finalizacion, incrementamos
+                if (turno.ultimoNumero < turno.numeroFin) {
+                    turno.set('ultimoNumero', turno.get('ultimoNumero') + 1);
+                }
+
+                // si son iguales (llego a su fin) y aun esta activo, entonces finalizamos el turno
+                if (turno.ultimoNumero === turno.numeroFin && turno.estado === 'activo') {
+                    turno.set('estado', 'finalizado');
+                }
+
+                turno.save((err, turnero) => {
+                    // puede darse el caso de que el turno sea muy viejo e
+                    // inclusive lo hayan borrado, para ese caso lo que haremos es buscar
+                    // el siguiente activo
+                    if (err) {
+                       return next(err);
+                    }
+
+                    ventanilla.isNew = false;
+                    ventanilla.set('llamado', 1);
+
+                    let ultimo: any = {};
+                    ultimo = {
+                        numero: turno.ultimoNumero, tipo: turno.tipo, letra: turno.letraInicio, color: turno.color, llamado: 1
+                    }
+
+                    // seteamos el ultimo turno llamado desde la ventanilla
+                    ventanilla.ultimo[turno.tipo] = ultimo;
+
+                    // indicamos que tipo de turno esta atendiendo
+                    ventanilla.set('atendiendo', turno.tipo);
+
+                    // guardamos la info de la ventanilla
+                    ventanilla.save((err, data2: any) => {
+                        if (err) {
+                            return next(err);
+                        }
+
+                        // armamos el documento a devolver, que tendra la ventanilla
+                        // y el turno en un mismo objeto
+                        let dto = {
+                            ventanilla: data2,
+                            turno: turno
+                        };
+
+                        // seteamos la variable de cambio para enviar el SSE
+                        cambio = {
+                            timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: data2._id, ventanilla: data2, turno: turnero
+                        }
+
+                        // devolvemos!
+                        res.json(dto);
+                    });
+                });
+            } else {
+                // si el turno actual ya esta agotado, llamamos al siguiente
+                try {
+                    let proximoTurno = getProximoTurno(ventanilla, req.body.tipo);
+            
+                    res.json(proximoTurno);
+            
+                } catch (err) { 
+                    return next(err);
+                }
+
+            }
+
+
             break;
         default:
 
@@ -318,11 +299,7 @@ router.patch('/ventanillas/:id*?', function (req, res, next) {
 
                     cambio.timestamp = (new Date().getMilliseconds());
                     cambio.idVentanilla = data._id;
-
-
                     cambio.ventanilla = data;
-                    //cambio.ventanilla['turno'] = turnero;
-
 
                     return res.json(data);
                 });
@@ -350,5 +327,75 @@ router.delete('/ventanillas/:id', function (req, res, next) {
     });
 
 });
+
+
+/**
+ * Buscamos el siguiente turno disponible cargado
+ * 
+ * @param {any} ventanilla Ventanilla desde la cual se está solicitando el turno
+ * @param {any} tipoTurno Tipo de turno que se desea obtener (prioritario / noPrioritario)
+ * @returns Promise
+ */
+async function getProximoTurno(ventanilla, tipoTurno) {
+    return new Promise( (resolve, reject) => {
+        
+        Turno.findOne({ 'estado': 'activo', tipo: tipoTurno }, (errNuevo, turneroNuevo: any) => {
+            if (errNuevo) {
+                return reject(errNuevo);
+            }
+    
+            // no hay proximo turno, devolvemos la ventanilla con el turno nulleado
+            if (!turneroNuevo) {
+                // seteamos la variable de cambio para enviar el SSE
+                cambio = {timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: ventanilla._id, ventanilla: ventanilla, turno: null};
+    
+                return resolve(ventanilla);
+            }
+    
+    
+            turneroNuevo.set('ultimoNumero', turneroNuevo.get('ultimoNumero') + 1);
+    
+            // si son iguales y aun esta activo, entonces finalizamos el turno
+            if (turneroNuevo.ultimoNumero === turneroNuevo.numeroFin && turneroNuevo.estado === 'activo') {
+                turneroNuevo.set('estado', 'finalizado');
+            }
+    
+            turneroNuevo.save((errNuevo, turneroNuevoSave: any) => {
+    
+                let ultimo: any = {};
+                ultimo[turneroNuevoSave.tipo] = {
+                    numero: turneroNuevoSave.ultimoNumero,
+                    tipo: turneroNuevoSave.tipo,
+                    letra: turneroNuevoSave.letraInicio,
+                    color: turneroNuevoSave.color,
+                    llamado: 1
+                }
+    
+                // seteamos el ultimo turno llamado desde la ventanilla
+                ventanilla.set('ultimo', ultimo);
+    
+                ventanilla.save((err3, data3: any) => {
+                    if (err3) {
+                        return reject(err3);
+                    }
+    
+                    // armamos el documento a devolver, que tendra la ventanilla
+                    // y el turno en un mismo objeto
+                    let dto = {
+                        ventanilla: data3,
+                        turno: turneroNuevo
+                    };
+    
+                    // seteamos la variable de cambio para enviar el SSE
+                    cambio = {timestamp: (new Date().getMilliseconds()), type: 'default', idVentanilla: data3._id, ventanilla: data3, turno: turneroNuevo};
+    
+                    // devolvemos!
+                    return resolve(dto);
+                });
+            });
+    
+        });
+    });
+}
 
 export = router;
