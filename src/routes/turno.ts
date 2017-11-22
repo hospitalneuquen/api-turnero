@@ -168,11 +168,63 @@ router.post('/turnero', async (req, res, next) => {
         */
 });
 
-router.post('/turnero/rollo', (req, res, next) => {
-    let turno: any = new Turno(req.body);
+router.post('/turnero/rollo', async (req, res, next) => {
+    //const LETRAS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+    const LETRAS = ['a', 'b', 'c', 'd', 'e'];
 
-    // TODO: Crear un rollo completo de golpe,
-    // De la A a la E, del 00 al 99 en cada número
+    let turnos: any[] = [];
+    try {
+        for (const letra of LETRAS) {
+            //let turno: any = new Turno(req.body);
+            // recorremos los numeros
+            let turno = {
+                letraInicio: letra,
+                color: req.body.color,
+                tipo: req.body.tipo,
+                createdAt: new Date(),
+                estado: 'activo',
+                ultimoNumero: -1,
+                numeroInicio: 0,
+                numeroFin: 99
+            };
+
+            turnos.push(await save(turno));
+        }
+
+        return res.json(turnos);
+        // if (turnos.length === LETRAS.length) {
+        //     res.json(turnos);
+        // }
+        // await Promise.all(turnos).then(turnos => {
+        //     console.log(turnos);
+        //     res.json(turnos);
+        // }).catch( err => {
+        //     console.log(err);
+        //     return next(err);
+        // });
+        
+
+    } catch (err) { 
+        return next(err);
+    }
+
+        // await Promise.all(turnos).then(turnos => {
+        //     console.log(turnos);
+        //     res.json(turnos);
+        // }).catch( err => {
+        //     console.log(err);
+        //     return next(err);
+        // })
+        
+        // try {
+        //     console.log(data);
+            
+        //     res.json(data);
+    
+        // } catch (err) { 
+        //     return next(err);
+        // }
+
 });
 
 
@@ -380,7 +432,7 @@ async function save(data) {
       
         if (existeTurno.length) {
             //return next(new Error('Ya existe el turno de este tipo y con esa letra y numeración'));
-            return reject(new Error('Ya existe el turno de este tipo y con esa letra y numeración'));
+            return reject(new Error('Ya existe el turno del tipo <b>' + turno.tipo + '</b>, para la letra <b>' + turno.letraInicio.toUpperCase() + '</b> y numeración <b>' + turno.numeroInicio + '/' + turno.numeroFin + '</b>'));
         }
 
         turno.save((err, data) => {
