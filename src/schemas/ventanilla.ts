@@ -38,7 +38,11 @@ export let ventanillaSchema = new mongoose.Schema({
         enum: ['prioritario', 'noPrioritario']
     },
     disponible: Boolean,
-    pausa: Boolean
+    pausa: Boolean,
+    enUso: {
+        type: Boolean,
+        default: false
+    }
 });
 
 export let Ventanilla = mongoose.model('ventanillas', ventanillaSchema, 'ventanillas');
