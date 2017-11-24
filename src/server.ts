@@ -125,7 +125,7 @@ export class Server {
         mongoose.connect(config.db);
 
         mongoose.connection.on('connected', function () {
-            console.log('[Mongoose] Conexión OK');
+            console.log('[Mongoose] Conexión OK!');
         });
         mongoose.connection.on('error', function (err) {
             console.log('[Mongoose] No se pudo conectar al servidor');
