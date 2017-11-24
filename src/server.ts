@@ -7,8 +7,9 @@ import * as mongoose from 'mongoose';
 import * as config from './config';
 import * as errorHandler from 'errorhandler';
 import * as methodOverride from 'method-override';
-import * as requireDir from 'require-dir';
+// import * as requireDir from 'require-dir';
 
+var requireDir = require('require-dir');
 var helmet = require('helmet');
 
 
